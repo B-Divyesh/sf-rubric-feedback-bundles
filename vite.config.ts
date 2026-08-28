@@ -3,6 +3,7 @@ import preact from '@preact/preset-vite';
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { resolve, relative } from 'node:path';
+import { shouldPrecache } from './src/precache';
 
 async function walk(directory: string): Promise<string[]> {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -21,7 +22,7 @@ function serviceWorkerPlugin() {
       const dist = resolve(import.meta.dirname, 'dist');
       const files = (await walk(dist))
         .map((file) => `/${relative(dist, file).replaceAll('\\\\', '/')}`)
-        .filter((file) => !file.endsWith('/sw.js') && !file.includes('feedback-geometry-1280'));
+        .filter(shouldPrecache);
       const template = await readFile(resolve(import.meta.dirname, 'src/sw-template.js'), 'utf8');
       const precache = JSON.stringify(files);
       const cacheVersion = createHash('sha256').update(precache).digest('hex').slice(0, 10);

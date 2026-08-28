@@ -9,6 +9,12 @@ async function createBundle(page: import('@playwright/test').Page) {
   await expect(page.getByRole('heading', { name: 'Flash fiction' })).toBeVisible();
 }
 
+async function ensureServiceWorkerControl(page: import('@playwright/test').Page) {
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  if (!await page.evaluate(() => Boolean(navigator.serviceWorker.controller))) await page.reload();
+  await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
+}
+
 test('completes and exports specific student feedback', async ({ page }) => {
   const consoleErrors: string[] = [];
   page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });
@@ -53,12 +59,7 @@ test('has no serious accessibility violations in welcome and editor states', asy
 
 test('reloads the grading workspace offline after first visit', async ({ page, context }) => {
   await createBundle(page);
-  await page.evaluate(async () => {
-    await navigator.serviceWorker.ready;
-    if (!navigator.serviceWorker.controller) {
-      await new Promise<void>((resolve) => navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), { once: true }));
-    }
-  });
+  await ensureServiceWorkerControl(page);
   await expect.poll(() => page.evaluate(async () => {
     const appUrl = [...document.scripts].find((script) => script.type === 'module')?.src ?? '';
     const key = (await caches.keys()).find((item) => item.startsWith('feedback-bundles-')) ?? '';
@@ -76,6 +77,25 @@ test('reloads the grading workspace offline after first visit', async ({ page, c
   await expect(page.getByRole('heading', { name: 'Flash fiction' })).toBeVisible();
   await page.getByLabel('Student name').fill('Offline student');
   await expect(page.getByLabel('Student name')).toHaveValue('Offline student');
+});
+
+test('activates an available service-worker update without losing local work', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop-chromium');
+  await createBundle(page);
+  await ensureServiceWorkerControl(page);
+  await page.evaluate(async () => {
+    const registration = await navigator.serviceWorker.register(`/sw.js?qa-update=${Date.now()}`);
+    const worker = registration.installing ?? registration.waiting;
+    if (worker && worker.state !== 'installed') {
+      await new Promise<void>((resolve) => worker.addEventListener('statechange', () => {
+        if (worker.state === 'installed') resolve();
+      }));
+    }
+  });
+  await expect(page.getByText('An update is ready')).toBeVisible();
+  await page.getByRole('button', { name: 'Update now' }).click();
+  await expect(page.getByRole('heading', { name: 'Flash fiction' })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => navigator.serviceWorker.controller?.scriptURL.includes('qa-update=') ?? false)).toBe(true);
 });
 
 test('mobile layout keeps core actions reachable', async ({ page }, testInfo) => {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
+import { shouldPrecache } from './precache';
 
 interface RouteConfig {
   route: string;
@@ -16,6 +17,12 @@ async function deploymentConfig(): Promise<StaticWebAppConfig> {
 }
 
 describe('production response policy', () => {
+  it('does not precache deployment metadata that the public edge does not serve', () => {
+    expect(shouldPrecache('/staticwebapp.config.json')).toBe(false);
+    expect(shouldPrecache('/sw.js')).toBe(false);
+    expect(shouldPrecache('/assets/app-release.js')).toBe(true);
+  });
+
   it('serves versioned assets and fonts with immutable caching', async () => {
     const config = await deploymentConfig();
     for (const route of ['/assets/*', '/fonts/*']) {
