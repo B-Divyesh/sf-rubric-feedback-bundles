@@ -15,9 +15,17 @@ async function ensureServiceWorkerControl(page: import('@playwright/test').Page)
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
 }
 
-test('completes and exports specific student feedback', async ({ page }) => {
+test('completes and exports specific student feedback', async ({ page }, testInfo) => {
   const consoleErrors: string[] = [];
+  const unexpectedRequests: string[] = [];
+  const posts: string[] = [];
+  const expectedOrigin = new URL(String(testInfo.project.use.baseURL)).origin;
   page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });
+  page.on('request', (request) => {
+    const url = new URL(request.url());
+    if (url.protocol.startsWith('http') && url.origin !== expectedOrigin) unexpectedRequests.push(request.url());
+    if (request.method() === 'POST') posts.push(request.url());
+  });
   await createBundle(page);
   await page.getByLabel('Student name').fill('Avery');
   await page.getByLabel('Submission').fill('The clock in the empty station began moving backward.');
@@ -45,6 +53,8 @@ test('completes and exports specific student feedback', async ({ page }) => {
   await expect(page.getByText('Choose one specific detail and explain how it supports your claim.')).toBeVisible();
   await expect(page.getByText('Choose the station clock detail')).toHaveCount(0);
   expect(consoleErrors).toEqual([]);
+  expect(unexpectedRequests).toEqual([]);
+  expect(posts).toEqual([]);
 });
 
 test('has no serious accessibility violations in welcome and editor states', async ({ page }) => {
@@ -55,6 +65,18 @@ test('has no serious accessibility violations in welcome and editor states', asy
   await createBundle(page);
   results = await new AxeBuilder({ page }).analyze();
   expect(results.violations.filter((item) => ['serious', 'critical'].includes(item.impact ?? ''))).toEqual([]);
+});
+
+test('respects reduced motion', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop-chromium');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/');
+  const motion = await page.getByRole('button', { name: 'Create feedback bundle' }).evaluate((button) => ({
+    reduced: matchMedia('(prefers-reduced-motion: reduce)').matches,
+    transitionSeconds: Math.max(...getComputedStyle(button).transitionDuration.split(',').map((value) => Number.parseFloat(value)))
+  }));
+  expect(motion.reduced).toBe(true);
+  expect(motion.transitionSeconds).toBeLessThanOrEqual(0.001);
 });
 
 test('reloads the grading workspace offline after first visit', async ({ page, context }) => {

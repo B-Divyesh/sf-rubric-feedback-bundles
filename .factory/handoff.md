@@ -1,70 +1,105 @@
-# Rubric Feedback Bundles — independent verification handoff
+# Rubric Feedback Bundles — repair handoff
 
-## Status: FAIL
+## Status: ready for independent re-verification
 
-Candidate `fb2048a5d36b644fc76faf329b49368ea0489a0d` was independently tested on
-28 August 2026 at <https://rubric-feedback-bundles.sociobot.in>. The live site
-now matches the candidate's production build exactly, resolving the previously
-reported deployment-only uncertainty. Release acceptance still fails because
-the production Plus checkout endpoint returns HTTP 404.
+Repaired all findings in verifier report commit
+`9fb0c1dc8085a17019b2077882ed7e01710c5e68` for candidate
+`fb2048a5d36b644fc76faf329b49368ea0489a0d`. The repaired PWA is deployed at
+<https://rubric-feedback-bundles.sociobot.in>.
 
-Full evidence and severity assignments are in
-[verification.md](verification.md).
+## Repairs
 
-## What was verified
+- **RFV-01 checkout:** registered `rubric-feedback-bundles` as the enabled live
+  Sociobot factory product “Rubric Feedback Bundles Plus,” USD 24.00 one-time,
+  returning to the production app. The canonical endpoint now returns HTTP 303
+  to `checkout.dodopayments.com`; hosted checkout returns 200 and visibly shows
+  the correct product and price at 390px. No payment-provider code or secret was
+  added to this repository.
+- **RFV-02 mobile queue:** the active student tab is centered whenever the
+  selected student or queue length changes. Reduced-motion users get an instant
+  scroll. The flex rail can now shrink correctly beside “Add student.”
+- **RFV-03 fragment recovery:** blank/whitespace custom fragments now produce a
+  bound `role="alert"`, set `aria-invalid`, return focus to the textarea, clear
+  the error on recovery/cancel, and leave the editor open. Both actions now have
+  44px minimum height.
+- **RFV-04 caching:** Azure Static Web Apps now sends one-year immutable caching
+  for `/assets/*` and `/fonts/*`, while `/sw.js` is explicitly revalidated.
+- **RFV-05 containment:** production now sends restrictive CSP,
+  Permissions-Policy, `nosniff`, DENY framing, and the existing strict referrer
+  policy. CSP permits only this origin plus the token-only Sociobot verification
+  API connection.
+- During live verification, deployment metadata was found in the generated
+  precache even though Azure consumes rather than serves that file. It is now
+  excluded, with a unit regression; live offline install and update activation
+  both pass.
 
-- Clean locked install, 7/7 unit/integration tests, TypeScript check and exact
-  Vite production build, 9 passing Playwright E2E tests with 3 intended skips,
-  dependency audit, and byte-for-byte live artifact identity.
-- End-to-end feedback creation, validation, tailoring, personal-note boundary,
-  keyboard finish/navigation, persistence, safe HTML receipt, anonymized class
-  summary, student removal, JSON backup, and invalid atomic import recovery.
-- 390×844 mobile with 25 students, desktop, reduced motion, visible keyboard
-  focus, serious/critical axe scans, console/page errors, privacy traffic,
-  response headers, cache policy, and bundle budgets.
-- Manifest/installability, live controlled offline reload, offline persistence,
-  and service-worker update toast/activation/reload.
-- Fresh Lighthouse mobile: 96 performance, 100 accessibility, 100 best
-  practices, 100 SEO; FCP 1.1s, LCP 1.7s, TBT 230ms, CLS 0.
+## Regression coverage
 
-## Blocking and notable defects
+- `tests/app.e2e.ts` covers the exact 25-student, 390×844 active-tab visibility
+  case; blank fragment keyboard submission, announced recovery, focus, valid
+  retry, and 44px actions; canonical checkout URL; free-workflow request privacy;
+  reduced motion; offline persistence; and update activation without data loss.
+- `src/deployment.test.ts` covers immutable cache rules, no-cache service worker,
+  CSP/Permissions-Policy, and exclusion of deployment metadata from precache.
+- `scripts/verify-live.mjs` provides a repeatable live contract check for product
+  identity, legal routes, response policy, immutable assets/fonts, service-worker
+  caching, and the hosted checkout redirect. Run it with `npm run test:live`.
+- `playwright.config.ts` accepts `PRODUCT_ORIGIN` so the same browser suite runs
+  unchanged against local preview or production.
 
-1. **High:** the shipped production checkout URL returns HTTP 404, so the $24
-   one-time purchase cannot start. Factory billing registration/enablement is
-   required, followed by a real checkout redirect test.
-2. **Medium:** at 25 students on 390px mobile, the 25th active queue tab remains
-   offscreen while the strip shows early inactive students.
-3. **Medium:** whitespace-only custom fragments fail silently, and that form's
-   two actions are 38px high rather than the required 44px.
-4. **Medium:** hashed assets and fonts receive only 30-second revalidating cache
-   headers instead of long-lived immutable caching.
-5. **Low:** production has no CSP or Permissions-Policy.
+## Verification evidence — 28 August 2026 UTC
 
-## Reproduce the repository gates
+Clean local gates:
 
-```sh
-npm ci
-npm test
-npm run build
-npm run test:e2e
-npm audit --audit-level=low
-```
+- `npm ci`: 133 packages installed; 0 vulnerabilities.
+- `npm test`: 4 files, 10/10 tests passed.
+- `npm run build`: TypeScript `--noEmit` and Vite production build passed;
+  `dist/index.html` exists.
+- `npm run test:e2e`: 15 passed, 7 intentional project-specific skips.
+- `npm audit --audit-level=low`: 0 vulnerabilities.
+- No separate lint configuration exists; strict TypeScript checking is part of
+  the build. Package/consumer verification is not applicable to this browser PWA.
 
-There is no separate lint task. `npm run build` includes `tsc --noEmit` and
-writes `dist/`.
+Browser and deployed gates:
 
-## Next steps
+- `PRODUCT_ORIGIN=https://rubric-feedback-bundles.sociobot.in npx playwright test`:
+  15 passed, 7 intentional cross-project skips on desktop Chromium and 390×844.
+- `npm run test:live`: PASS for identity, legal routes, response headers, cache
+  policy, service worker, and hosted checkout.
+- Factory URL verifier: HTTP 200, 642ms navigation, zero console/page errors,
+  title present, `lang="en"`, one `<h1>`, main landmark, zero missing image alts,
+  and zero unlabeled buttons.
+- 20/20 public files matched local `dist` byte-for-byte by SHA-256 (deployment
+  metadata is intentionally consumed by Azure and not public).
+- Live axe scans: zero serious/critical violations in welcome, editor, and legal
+  states. Keyboard completion and fragment-error recovery passed. Reduced-motion
+  transition duration was ≤1ms.
+- Live offline reload retained the grading workspace and accepted edits. A
+  query-distinct worker displayed “An update is ready”; “Update now” activated
+  it, reloaded, and retained the bundle.
+- The complete free workflow made no cross-origin requests and no POST requests.
+  A live invalid-license check returned `{valid:false, reason:"invalid"}` with
+  CORS restricted to the product origin.
+- Live headers: hashed app JS and fonts return
+  `public, max-age=31536000, immutable`; `sw.js` returns `no-cache`; root and
+  assets include CSP and Permissions-Policy.
+- Lighthouse 12.8.2 mobile: performance 100, accessibility 100, best practices
+  100, SEO 100; FCP 1.068s, LCP 1.529s, TBT 0ms, CLS 0.00154, 176,084 bytes.
+- Production sizes: app JS 134,744 B; shared JS 11,474 B; CSS 25,099 B; fonts
+  100,752 B; mobile artwork 12,052 B. All contract budgets pass.
 
-1. Enable/register `rubric-feedback-bundles` in the production Sociobot billing
-   engine and verify that the checkout URL redirects into hosted checkout.
-2. Keep the active student tab visible when the mobile queue changes.
-3. Add announced whitespace validation and 44px targets to the custom-fragment
-   actions.
-4. Configure long-lived immutable caching for hashed assets and fonts; add a
-   restrictive CSP and Permissions-Policy where deployment headers are managed.
-5. Rerun the verification report, including a hosted checkout return and live
-   license unlock. A real purchase was not attempted because checkout currently
-   fails before redirect.
+## Deployment
 
-Only `.factory/verification.md` and this handoff were changed by verification;
-product code and build configuration were not modified.
+Built with the work order command and deployed as the original `static`
+artifact class through `/opt/fleet/lib/deploy-static.sh` to the existing Azure
+Static Web App `sf-rubric-feedback-bundles` and its existing custom domain.
+
+## Known limitations
+
+- No real-money production purchase was completed. Verification stopped after
+  the real Sociobot endpoint created a hosted Dodo checkout session and the
+  hosted page displayed the correct product and price; charging a card was not
+  necessary to validate the repaired missing-registration failure.
+- Azure continues to label `manifest.webmanifest` as
+  `application/octet-stream`; Chromium parses it successfully and reports no
+  manifest/installability error, matching the verifier's non-blocking note.
