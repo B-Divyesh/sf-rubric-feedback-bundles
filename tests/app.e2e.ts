@@ -89,6 +89,46 @@ test('mobile layout keeps core actions reachable', async ({ page }, testInfo) =>
   expect(overflow).toBe(false);
 });
 
+test('mobile queue keeps the active student visible with 25 students', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile-390');
+  test.setTimeout(60_000);
+  await createBundle(page);
+  for (let index = 2; index <= 25; index += 1) {
+    await page.getByRole('button', { name: 'Add student' }).click();
+    await page.getByLabel('Student name').fill(`Writer ${index}`);
+  }
+
+  const activeTab = page.locator('.student-tab[aria-current="page"]');
+  await expect(activeTab).toContainText('Writer 25');
+  await expect.poll(() => activeTab.evaluate((tab) => {
+    const queue = tab.parentElement!;
+    const tabBox = tab.getBoundingClientRect();
+    const queueBox = queue.getBoundingClientRect();
+    return tabBox.left >= queueBox.left && tabBox.right <= queueBox.right;
+  })).toBe(true);
+});
+
+test('blank custom fragment reports an error and keeps touch actions accessible', async ({ page }) => {
+  await createBundle(page);
+  await page.getByRole('button', { name: 'Write a fragment' }).first().click();
+  const editor = page.getByLabel('New reusable fragment');
+  await editor.fill('   ');
+  await page.getByRole('button', { name: 'Save and select' }).press('Enter');
+
+  await expect(page.locator('[role="alert"]', { hasText: 'Write a reusable fragment before saving.' })).toBeVisible();
+  await expect(editor).toBeFocused();
+  await expect(editor).toHaveAttribute('aria-invalid', 'true');
+  for (const name of ['Save and select', 'Cancel']) {
+    const box = await page.getByRole('button', { name }).boundingBox();
+    expect(box?.height).toBeGreaterThanOrEqual(44);
+  }
+
+  await editor.fill('Name the precise image that makes the ending resonate.');
+  await page.getByRole('button', { name: 'Save and select' }).click();
+  await expect(page.getByText('Fragment saved to this bundle and selected.')).toBeVisible();
+  await expect(page.getByLabel('Tailor for this student', { exact: true })).toHaveValue('Name the precise image that makes the ending resonate.');
+});
+
 test('restores a one-time Plus license without blocking the free experience', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop-chromium');
   await page.route('https://api.sociobot.in/api/v1/products/rubric-feedback-bundles/verify?license=test-license', (route) => route.fulfill({ json: { valid: true, reason: 'ok', expires_at: null } }));
@@ -96,6 +136,15 @@ test('restores a one-time Plus license without blocking the free experience', as
   await expect(page).not.toHaveURL(/license=/);
   await expect(page.getByText('Plus is unlocked')).toBeVisible();
   await expect(page.getByText('License active on this device')).toBeVisible();
+});
+
+test('uses the registered Sociobot checkout contract', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop-chromium');
+  await page.goto('/#settings');
+  await expect(page.getByRole('link', { name: 'Buy Plus securely' })).toHaveAttribute(
+    'href',
+    'https://api.sociobot.in/api/v1/products/rubric-feedback-bundles/checkout'
+  );
 });
 
 test('legal pages are semantic and accessible', async ({ page }, testInfo) => {

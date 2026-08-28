@@ -34,12 +34,17 @@ npm run dev
 npm test
 npm run build
 npm run test:e2e
+npm run test:live
 ```
 
 `npm run build` is the deployment command. It writes the static app, legal
 pages, manifest, icons, and generated service worker to `dist/`, with
 `dist/index.html` at the root. The E2E suite is pinned to Playwright 1.58.2 and
 uses the preinstalled Chromium browser in the factory worker.
+
+`npm run test:live` checks the deployed identity, legal routes, containment
+headers, immutable asset policy, service-worker revalidation, and the hosted
+Sociobot checkout redirect. Set `PRODUCT_ORIGIN` to verify another deployment.
 
 Set `VITE_BILLING_BASE` at build time only when testing against a different
 Sociobot environment. Production defaults to `https://api.sociobot.in/api/v1`.

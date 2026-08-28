@@ -76,7 +76,7 @@ h3{font-family:var(--editorial);font-size:clamp(1.35rem,2.5vw,1.75rem);font-weig
 .button--secondary:hover{background:#eaf1f1}
 .button--quiet{background:transparent;color:var(--blue);border-color:var(--rule)}
 .button--quiet:hover{border-color:var(--blue);background:rgba(255,253,247,.6)}
-.button--small{min-height:38px;padding:7px 12px;font-size:.875rem}
+.button--small{min-height:44px;padding:9px 12px;font-size:.875rem}
 .button-row{display:flex;flex-wrap:wrap;gap:8px}
 .button-stack{display:flex;flex-wrap:wrap;gap:12px}
 .icon{width:20px;height:20px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:square;stroke-linejoin:miter;flex:0 0 auto}
@@ -123,7 +123,7 @@ textarea{resize:vertical;line-height:1.5}
 .progress{height:8px;background:#d8dedb;flex:1;overflow:hidden}
 .progress span{height:100%;display:block;background:var(--leaf);transition:width .24s ease-out}
 .student-queue{display:flex;align-items:stretch;justify-content:space-between;gap:16px;border-bottom:1px solid var(--rule);min-height:64px}
-.student-queue__list{display:flex;align-items:stretch;gap:4px;overflow-x:auto;scrollbar-width:thin;padding-top:7px}
+.student-queue__list{display:flex;align-items:stretch;gap:4px;overflow-x:auto;scrollbar-width:thin;padding-top:7px;min-width:0;flex:1}
 .student-tab{display:flex;align-items:center;gap:9px;min-height:52px;white-space:nowrap;background:transparent;padding:8px 13px;border-bottom:3px solid transparent;font-weight:650;color:var(--muted);cursor:pointer}
 .student-tab:hover{color:var(--ink)}
 .student-tab.is-current{color:var(--ink);border-bottom-color:var(--coral);background:rgba(255,253,247,.6)}
@@ -167,6 +167,7 @@ textarea{resize:vertical;line-height:1.5}
 .add-fragment{min-height:44px;padding:8px 12px;background:transparent;color:var(--blue);font-weight:700;display:flex;align-items:center;gap:7px;cursor:pointer}
 .custom-fragment{background:var(--sheet);padding:16px;margin-top:12px;border-left:3px solid var(--blue)}
 .custom-fragment textarea{min-height:90px;margin:7px 0 10px}
+.custom-fragment .field-error{margin:-2px 0 10px}
 .personal-note{margin-top:32px;background:var(--ink);color:var(--sheet);padding:24px;clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,0 100%)}
 .note-heading{display:flex;align-items:start;gap:12px}
 .note-heading label{font-family:var(--editorial);font-size:1.2rem;font-weight:650}

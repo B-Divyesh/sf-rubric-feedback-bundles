@@ -94,7 +94,9 @@ function Workspace({ bundle, onChange, onMessage }: WorkspaceProps) {
   const [studentIndex, setStudentIndex] = useState(0);
   const [customFor, setCustomFor] = useState<string | null>(null);
   const [customText, setCustomText] = useState('');
+  const [customError, setCustomError] = useState('');
   const [validation, setValidation] = useState('');
+  const studentQueueRef = useRef<HTMLDivElement>(null);
   const student = bundle.students[Math.min(studentIndex, bundle.students.length - 1)];
   const completed = bundle.students.filter((item) => item.completed).length;
   const progress = bundle.students.length ? Math.round((completed / bundle.students.length) * 100) : 0;
@@ -102,6 +104,17 @@ function Workspace({ bundle, onChange, onMessage }: WorkspaceProps) {
   useEffect(() => {
     setStudentIndex((index) => Math.min(index, bundle.students.length - 1));
   }, [bundle.id, bundle.students.length]);
+
+  useEffect(() => {
+    const queue = studentQueueRef.current;
+    const active = queue?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!queue || !active) return;
+    const target = active.offsetLeft - (queue.clientWidth - active.offsetWidth) / 2;
+    queue.scrollTo({
+      left: Math.max(0, target),
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+    });
+  }, [bundle.id, bundle.students.length, studentIndex]);
 
   useEffect(() => {
     function keys(event: KeyboardEvent) {
@@ -133,7 +146,11 @@ function Workspace({ bundle, onChange, onMessage }: WorkspaceProps) {
 
   function addCustom(criterionId: string) {
     const text = customText.trim();
-    if (!text) return;
+    if (!text) {
+      setCustomError('Write a reusable fragment before saving.');
+      requestAnimationFrame(() => document.querySelector<HTMLTextAreaElement>(`#custom-${criterionId}`)?.focus());
+      return;
+    }
     const next = structuredClone(bundle);
     const fragment = { id: newId('fragment'), text };
     const criterion = next.criteria.find((item) => item.id === criterionId);
@@ -144,6 +161,7 @@ function Workspace({ bundle, onChange, onMessage }: WorkspaceProps) {
     onChange(next);
     setCustomFor(null);
     setCustomText('');
+    setCustomError('');
     onMessage('Fragment saved to this bundle and selected.');
   }
 
@@ -235,7 +253,7 @@ function Workspace({ bundle, onChange, onMessage }: WorkspaceProps) {
     </section>
 
     <nav className="student-queue" aria-label="Student work queue">
-      <div className="student-queue__list">
+      <div className="student-queue__list" ref={studentQueueRef}>
         {bundle.students.map((item, index) => <button key={item.id} className={`student-tab ${index === studentIndex ? 'is-current' : ''}`} aria-current={index === studentIndex ? 'page' : undefined} onClick={() => nav(index)}>
           <span className={`student-state ${item.completed ? 'is-complete' : ''}`} aria-hidden="true" />
           <span>{item.name.trim() || `Student ${index + 1}`}</span>
@@ -295,9 +313,10 @@ function Workspace({ bundle, onChange, onMessage }: WorkspaceProps) {
                 })}
                 {customFor === criterion.id ? <div className="custom-fragment">
                   <label htmlFor={`custom-${criterion.id}`}>New reusable fragment</label>
-                  <textarea id={`custom-${criterion.id}`} value={customText} onInput={(e) => setCustomText(e.currentTarget.value)} autoFocus />
-                  <div className="button-row"><button className="button button--primary button--small" type="button" onClick={() => addCustom(criterion.id)}>Save and select</button><button className="button button--quiet button--small" type="button" onClick={() => { setCustomFor(null); setCustomText(''); }}>Cancel</button></div>
-                </div> : <button className="add-fragment" type="button" onClick={() => setCustomFor(criterion.id)}><Icon name="plus" /> Write a fragment</button>}
+                  <textarea id={`custom-${criterion.id}`} value={customText} onInput={(e) => { setCustomText(e.currentTarget.value); if (customError && e.currentTarget.value.trim()) setCustomError(''); }} aria-invalid={Boolean(customError)} aria-describedby={customError ? `custom-${criterion.id}-error` : undefined} autoFocus />
+                  {customError && <p id={`custom-${criterion.id}-error`} className="field-error" role="alert">{customError}</p>}
+                  <div className="button-row"><button className="button button--primary button--small" type="button" onClick={() => addCustom(criterion.id)}>Save and select</button><button className="button button--quiet button--small" type="button" onClick={() => { setCustomFor(null); setCustomText(''); setCustomError(''); }}>Cancel</button></div>
+                </div> : <button className="add-fragment" type="button" onClick={() => { setCustomFor(criterion.id); setCustomError(''); }}><Icon name="plus" /> Write a fragment</button>}
               </div>
             </details>;
           })}
