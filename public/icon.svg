@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Rubric Feedback Bundles mark">
+  <rect width="128" height="128" rx="18" fill="#172b34"/>
+  <path fill="#fffdf7" d="M26 24h76v80H26z"/>
+  <path stroke="#b9cfd2" stroke-width="5" d="M39 43h50M39 58h50M39 73h32"/>
+  <path fill="#b94535" d="m70 95 25-24 7 7-25 24-10 3z"/>
+  <path fill="#f6f1e7" d="M67 105h10l-10-10z"/>
+</svg>

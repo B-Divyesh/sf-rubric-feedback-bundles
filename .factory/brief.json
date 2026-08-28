@@ -1,0 +1,13 @@
+{
+  "slug": "rubric-feedback-bundles",
+  "title": "Rubric Feedback Bundles",
+  "territory": "utilities",
+  "user": "Writing teachers with many short submissions who need to preserve meaningful, human feedback while avoiding repetitive retyping.",
+  "smallest_useful_product": "Local-first browser tool to select reusable feedback fragments, tailor them per criterion, attach one short personal note, and export a readable student feedback page plus anonymized class misconception summary.",
+  "success_measure": "A teacher completes feedback for 25 short pieces 30% faster while every student receives at least one specific personalized note.",
+  "artifact_class": "pwa-offline",
+  "monetization": "one-time",
+  "constraints": "Store student work locally unless the teacher explicitly exports; support accessible feedback pages; do not send submissions to an LLM.",
+  "non_goals": ["Essay generation", "Plagiarism scoring", "Automated marks"],
+  "state": "RESEARCHED"
+}
