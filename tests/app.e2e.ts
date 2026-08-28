@@ -32,7 +32,8 @@ test('completes and exports specific student feedback', async ({ page }) => {
   await expect(page.getByLabel('A note only you could write')).toHaveValue(/quiet station/);
   await page.getByRole('link', { name: 'Class summary' }).click();
   await expect(page.getByText('Anonymized feedback summary')).toBeVisible();
-  await expect(page.getByText('Choose the station clock detail')).toBeVisible();
+  await expect(page.getByText('Choose one specific detail and explain how it supports your claim.')).toBeVisible();
+  await expect(page.getByText('Choose the station clock detail')).toHaveCount(0);
   expect(consoleErrors).toEqual([]);
 });
 

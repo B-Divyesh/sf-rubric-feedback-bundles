@@ -23,9 +23,9 @@ model and avoids discrepancies between the editor and exported receipt.
 | Ink | `#172B34` | Primary copy; 13.5:1 on Paper |
 | Muted ink | `#52636A` | Secondary copy; 5.5:1 on Paper |
 | Rule | `#B9CFD2` | Dividers and quiet geometric lines |
-| Blue pencil | `#225B6A` | Primary actions; white is 7.3:1 |
+| Blue pencil | `#225B6A` | Primary actions; white is 7.4:1 |
 | Coral pencil | `#B94535` | Active annotations and branded marks |
-| Ochre | `#B07A18` | Warnings, always paired with words/icons |
+| Ochre | `#8F6112` | Warnings, always paired with words/icons |
 | Leaf | `#2E6B4F` | Saved/exported confirmation |
 | Danger | `#A23232` | Destructive actions and errors |
 

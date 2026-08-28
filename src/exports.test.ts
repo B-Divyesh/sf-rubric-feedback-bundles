@@ -22,15 +22,18 @@ describe('feedback exports', () => {
     const bundle = createBundle('Flash fiction', 'Workshop');
     const first = bundle.students[0];
     first.name = 'Named student';
-    first.feedback.ideas = [{ fragmentId: 'ideas-depth', text: 'Explain why this matters.' }];
+    first.feedback.ideas = [{ fragmentId: 'ideas-depth', text: 'Explain why the final image matters to this claim.' }];
     const second = structuredClone(first);
     second.id = 'second';
     second.name = 'Another student';
+    second.feedback.ideas[0].text = 'Explain why the repeated door image matters.';
     bundle.students.push(second);
 
     expect(misconceptionSummary(bundle)[0]).toMatchObject({ criterion: 'Ideas & evidence', count: 2 });
     const csv = summaryCsv(bundle);
-    expect(csv).toContain('Explain why this matters.');
+    expect(csv).toContain('Push this idea one step further by explaining why it matters.');
+    expect(csv).not.toContain('final image');
+    expect(csv).not.toContain('door image');
     expect(csv).not.toContain('Named student');
     expect(csv).not.toContain('Another student');
   });

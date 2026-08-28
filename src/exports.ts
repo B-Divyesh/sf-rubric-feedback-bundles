@@ -38,15 +38,25 @@ export function exportStudent(bundle: Bundle, student: Student): void {
 export interface SummaryItem { criterion: string; feedback: string; count: number }
 
 export function misconceptionSummary(bundle: Bundle): SummaryItem[] {
-  const counts = new Map<string, number>();
+  const counts = new Map<string, { criterionId: string; fragmentId: string; fallbackText: string; count: number }>();
   bundle.students.forEach((student) => {
     Object.entries(student.feedback).forEach(([criterionId, items]) => {
-      items.forEach((item) => counts.set(`${criterionId}::${item.text}`, (counts.get(`${criterionId}::${item.text}`) ?? 0) + 1));
+      items.forEach((item) => {
+        const key = `${criterionId}::${item.fragmentId}`;
+        const current = counts.get(key);
+        counts.set(key, {
+          criterionId,
+          fragmentId: item.fragmentId,
+          fallbackText: current?.fallbackText ?? item.text,
+          count: (current?.count ?? 0) + 1
+        });
+      });
     });
   });
-  return [...counts.entries()].map(([key, count]) => {
-    const [criterionId, feedback] = key.split('::');
-    return { criterion: bundle.criteria.find((item) => item.id === criterionId)?.name ?? 'Other', feedback, count };
+  return [...counts.values()].map(({ criterionId, fragmentId, fallbackText, count }) => {
+    const criterion = bundle.criteria.find((item) => item.id === criterionId);
+    const feedback = criterion?.fragments.find((item) => item.id === fragmentId)?.text ?? fallbackText;
+    return { criterion: criterion?.name ?? 'Other', feedback, count };
   }).sort((a, b) => b.count - a.count || a.criterion.localeCompare(b.criterion));
 }
 
