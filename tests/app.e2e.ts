@@ -15,9 +15,13 @@ test('completes and exports specific student feedback', async ({ page }) => {
   await createBundle(page);
   await page.getByLabel('Student name').fill('Avery');
   await page.getByLabel('Submission').fill('The clock in the empty station began moving backward.');
+  await page.getByRole('button', { name: 'Download feedback page' }).click();
+  await expect(page.getByText(/Select or write at least one rubric fragment before exporting/)).toBeVisible();
   const fragment = page.getByText('Choose one specific detail and explain how it supports your claim.');
   await fragment.click();
   await page.getByLabel('Tailor for Avery').fill('Choose the station clock detail and explain why its backward movement changes the scene.');
+  await page.getByRole('button', { name: 'Download feedback page' }).click();
+  await expect(page.getByText(/Write one personal note before exporting/)).toBeVisible();
   await page.getByLabel('A note only you could write').fill('The quiet station image stayed with me; your restraint made the strange moment believable.');
   await page.getByLabel('A note only you could write').press('Control+Enter');
   await expect(page.getByText('1 of 1 finished')).toBeVisible();
@@ -57,7 +61,8 @@ test('reloads the grading workspace offline after first visit', async ({ page, c
   });
   await expect.poll(() => page.evaluate(async () => {
     const appUrl = [...document.scripts].find((script) => script.type === 'module')?.src ?? '';
-    const response = await (await caches.open('feedback-bundles-v2')).match(appUrl);
+    const key = (await caches.keys()).find((item) => item.startsWith('feedback-bundles-')) ?? '';
+    const response = await (await caches.open(key)).match(appUrl);
     return response ? (await response.text()).length : 0;
   })).toBeGreaterThan(1000);
   await context.setOffline(true);

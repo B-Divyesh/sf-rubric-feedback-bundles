@@ -1,4 +1,4 @@
-const CACHE = 'feedback-bundles-v2';
+const CACHE = 'feedback-bundles-__CACHE_VERSION__';
 const PRECACHE = __PRECACHE__;
 
 self.addEventListener('install', (event) => {

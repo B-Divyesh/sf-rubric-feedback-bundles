@@ -168,21 +168,7 @@ function Workspace({ bundle, onChange, onMessage }: WorkspaceProps) {
   }
 
   function markComplete() {
-    if (!student.name.trim()) {
-      setValidation('Add the student’s name before finishing.');
-      document.querySelector<HTMLInputElement>('#student-name')?.focus();
-      return;
-    }
-    if (!student.personalNote.trim()) {
-      setValidation('Write one personal note before finishing. This keeps every response unmistakably yours.');
-      document.querySelector<HTMLTextAreaElement>('#personal-note')?.focus();
-      return;
-    }
-    const hasFeedback = Object.values(student.feedback).some((items) => items.length);
-    if (!hasFeedback) {
-      setValidation('Select or write at least one rubric fragment before finishing.');
-      return;
-    }
+    if (!validateResponse('finishing')) return;
     const next = structuredClone(bundle);
     next.students[studentIndex].completed = true;
     next.history.unshift({ id: newId('event'), at: new Date().toISOString(), label: `Feedback finished for ${student.name}` });
@@ -192,11 +178,29 @@ function Workspace({ bundle, onChange, onMessage }: WorkspaceProps) {
     onMessage(`Feedback for ${student.name} is ready to export.`);
   }
 
-  function exportCurrent() {
+  function validateResponse(action: 'finishing' | 'exporting'): boolean {
     if (!student.name.trim()) {
-      setValidation('Add the student’s name before exporting.');
-      return;
+      setValidation(`Add the student’s name before ${action}.`);
+      document.querySelector<HTMLInputElement>('#student-name')?.focus();
+      return false;
     }
+    const hasFeedback = Object.values(student.feedback).some((items) => items.some((item) => item.text.trim()));
+    if (!hasFeedback) {
+      setValidation(`Select or write at least one rubric fragment before ${action}.`);
+      document.querySelector<HTMLElement>('.criteria-list input, .add-fragment')?.focus();
+      return false;
+    }
+    if (!student.personalNote.trim()) {
+      setValidation(`Write one personal note before ${action}. This keeps every response unmistakably yours.`);
+      document.querySelector<HTMLTextAreaElement>('#personal-note')?.focus();
+      return false;
+    }
+    setValidation('');
+    return true;
+  }
+
+  function exportCurrent() {
+    if (!validateResponse('exporting')) return;
     exportStudent(bundle, student);
     const next = structuredClone(bundle);
     next.history.unshift({ id: newId('event'), at: new Date().toISOString(), label: `Feedback exported for ${student.name}` });
