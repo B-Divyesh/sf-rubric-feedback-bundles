@@ -3,68 +3,51 @@
 ## Status: FAIL
 
 Candidate `11accb6b62f22a0d26cbf9a49abe10a721e86ae1` was independently
-verified on 28 August 2026 from a clean checkout and against
+verified on 28 August 2026 from a detached clean checkout and against
 <https://rubric-feedback-bundles.sociobot.in>. No product code was changed.
 
-The local build, core workflow, privacy behavior, PWA offline/update lifecycle,
-checkout repair, accessibility scans, deployment identity, caching, and
-performance budgets pass. Release acceptance fails because the Sociobot
-license verification API did not rate-limit 421 rapid requests. A 120-request
-burst and a subsequent 300-request burst returned only HTTP 200, with no 429 or
-`Retry-After` header.
+The deployment-only rate-limit failure reported previously is now fixed: a
+fresh 240-request/40-concurrent burst to the license verification endpoint
+returned 208 HTTP 429 responses with `Retry-After` (after 32 HTTP 200
+responses). The candidate still **FAILS** release acceptance because the live
+390px UI has multiple interactive targets below the required 44 by 44 CSS
+pixels.
 
-See [`.factory/verification-2.md`](verification-2.md) for complete evidence and
-reproduction details.
+Complete evidence and commands are in
+[`.factory/verification-3.md`](verification-3.md).
 
-## Verification summary
+## Verified passing
 
-- `npm ci`: PASS; 133 packages, 0 vulnerabilities.
-- `npm test`: PASS; 10/10 tests.
-- `npm run build`: PASS; TypeScript and exact Vite production build; `dist/`
-  produced.
-- `npm run test:e2e`: PASS; 15 passed, 7 intentional skips.
-- Production E2E: PASS; 15 passed, 7 intentional skips.
-- `npm run test:live`: PASS.
-- `npm audit --audit-level=low`: PASS; 0 vulnerabilities.
-- Lint: N/A; no lint script/configuration is present.
-- Deployment match: PASS; 20/20 public build files match local `dist/` by
-  SHA-256; Azure-consumed `staticwebapp.config.json` is not public.
-- Factory URL verifier: PASS; HTTP 200, 1,031ms navigation, one `<h1>`, English
-  language, main landmark, complete image alts/button labels, zero console/page
-  errors.
-- Axe: PASS; zero serious/critical findings in welcome, editor, summary, legal,
-  receipt, and 25-student mobile states.
-- PWA: PASS; installability diagnostics clean, offline reload/edit works on
-  desktop and mobile, update activation preserves local work.
-- Privacy: PASS; no cross-origin or POST requests in the free workflow;
-  student data remains in IndexedDB; only token-only license verification is
-  external.
-- Checkout: PASS; 303 to hosted Dodo checkout showing the correct product and
-  `$24.00` one-time price at 390px.
-- Lighthouse mobile: 97 performance, 100 accessibility, 100 best practices,
-  100 SEO; LCP 1.672s, TBT 181ms, CLS 0.00154, 176,103 B transfer.
+- `npm ci`, `npm test` (10/10), `npm run build`, and `npm audit --audit-level=low`.
+- Local and deployed Playwright: 15 passed, 7 documented skips each.
+- Exact deployment identity: 20/20 public build files SHA-256 match candidate
+  `dist/`; Azure-only hosting configuration is not public.
+- Local-first end-to-end feedback, export validation/recovery, persistence,
+  anonymized summary, checkout contract, and legal pages.
+- Offline reload/edit and service-worker update activation with retained work.
+- Zero axe serious/critical findings, designed keyboard focus, no console/page
+  errors, and no cross-origin or POST requests in free use.
+- Security headers, CSP, immutable asset/font caching, and license API
+  rate-limiting.
+- Lighthouse mobile: 99 performance, 100 accessibility, 100 best practices,
+  100 SEO; LCP 1.661s, TBT 112ms, CLS 0, 176,178 bytes transferred.
 
 ## Open defects
 
-- **High — RFV2-01:** No observable rate limit on the product-license verify
-  endpoint. Threshold was not reached after 421 rapid requests; no 429 or
-  `Retry-After`.
-- **Medium — RFV2-02:** Several 390px header/footer targets are below the
-  required 44×44px size (Settings 40×40, nav 43px high, brand 36px high, legal
-  links about 18.7px high).
-- **Low — RFV2-03:** Production serves the manifest as
-  `application/octet-stream`; Chromium nevertheless reports no installability
-  error.
-- **Low — RFV2-04:** With 25 students, the 390px root reports 2,671px
-  `scrollWidth`, although the queue is contained, the active item is visible,
-  and practical root panning is only 2px.
+- **Medium — RFV3-01 (release-blocking):** At 390px, brand/home is 36px high,
+  Settings is 40×40px, primary nav is 43px high, and legal/footer links are
+  15–18.7px high (Terms footer link is 37px wide). All must provide 44×44px
+  hit areas.
+- **Low — RFV3-02:** Live manifest has `application/octet-stream` rather than
+  `application/manifest+json`; Chromium PWA tests still pass.
+- **Low — RFV3-03:** A 25-student mobile page reports 2,671px document
+  `scrollWidth`; actual root horizontal panning is clamped and active queue
+  tab remains visible after settling.
 
 ## Next steps
 
-1. Add/enforce a bounded IP/client rate limit on the Sociobot verification
-   route and return 429 with `Retry-After`; repeat the documented burst test.
-2. Raise every mobile interactive hit area to at least 44×44 CSS px.
-3. Correct the Azure manifest MIME response and contain visually hidden queue
-   status nodes so they do not inflate the root overflow metric.
-4. Re-run all commands and live checks listed above before changing status to
-   PASS.
+1. Increase every mobile interactive hit area to at least 44×44px and repeat
+   the 390px geometry check.
+2. Correct the deployed manifest MIME type and remove the diagnostic overflow.
+3. Re-run the verification commands in `verification-3.md`; only then change
+   the status to PASS.
