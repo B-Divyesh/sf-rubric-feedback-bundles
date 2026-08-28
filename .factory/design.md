@@ -56,13 +56,14 @@ outline with a 3px Paper offset.
 
 - **Add a fragment:** its small geometric marker appears beside the criterion
   and the editable copy unfolds directly beneath it.
-- **Save progress:** immediate `Saved locally` status; IndexedDB writes are
-  debounced and also performed on navigation/unload.
+- **Save progress:** each meaningful edit is committed immediately to
+  IndexedDB; saving and failure states are announced without interrupting the
+  teacher's typing.
 - **Student sequence:** Previous/Next tracks the work queue. Finished items
   gain a filled square; drafts use an outlined diamond. Keyboard shortcuts are
   documented in the interface (`Alt` + arrow; `Ctrl/Cmd` + `Enter`).
-- **Destructive actions:** explicit confirmation naming the affected student or
-  bundle. Removed fragments offer a short Undo action where practical.
+- **Destructive actions:** explicit confirmation names the affected student or
+  bundle and states that its local feedback record cannot be recovered.
 - Empty, offline, update, and error states use small diagrammatic glyphs plus a
   clear next action.
 
