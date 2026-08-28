@@ -131,6 +131,38 @@ test('mobile layout keeps core actions reachable', async ({ page }, testInfo) =>
   expect(overflow).toBe(false);
 });
 
+test('mobile navigation and legal links provide 44px touch targets', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile-390');
+  await createBundle(page);
+
+  const targets = [
+    page.getByRole('link', { name: 'Rubric Feedback Bundles home' }),
+    page.getByRole('link', { name: 'Grade', exact: true }),
+    page.getByRole('link', { name: 'Class summary' }),
+    page.getByRole('link', { name: 'Bundles', exact: true }),
+    page.getByRole('link', { name: 'Settings' }),
+    page.locator('.site-footer').getByRole('link', { name: 'Privacy' }),
+    page.locator('.site-footer').getByRole('link', { name: 'Terms' })
+  ];
+
+  for (const target of targets) {
+    const box = await target.boundingBox();
+    expect(box?.width).toBeGreaterThanOrEqual(44);
+    expect(box?.height).toBeGreaterThanOrEqual(44);
+  }
+
+  await page.getByRole('link', { name: 'Settings' }).click();
+  await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
+  for (const target of [
+    page.locator('.legal-line').getByRole('link', { name: 'terms' }),
+    page.locator('.legal-line').getByRole('link', { name: 'privacy policy' })
+  ]) {
+    const box = await target.boundingBox();
+    expect(box?.width).toBeGreaterThanOrEqual(44);
+    expect(box?.height).toBeGreaterThanOrEqual(44);
+  }
+});
+
 test('mobile queue keeps the active student visible with 25 students', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile-390');
   test.setTimeout(60_000);
@@ -148,6 +180,10 @@ test('mobile queue keeps the active student visible with 25 students', async ({ 
     const queueBox = queue.getBoundingClientRect();
     return tabBox.left >= queueBox.left && tabBox.right <= queueBox.right;
   })).toBe(true);
+  await expect.poll(() => page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth
+  }))).toEqual({ clientWidth: 390, scrollWidth: 390 });
 });
 
 test('blank custom fragment reports an error and keeps touch actions accessible', async ({ page }) => {

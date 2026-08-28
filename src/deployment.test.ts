@@ -9,6 +9,7 @@ interface RouteConfig {
 
 interface StaticWebAppConfig {
   routes: RouteConfig[];
+  mimeTypes: Record<string, string>;
   globalHeaders: Record<string, string>;
 }
 
@@ -30,6 +31,11 @@ describe('production response policy', () => {
         .toBe('public, max-age=31536000, immutable');
     }
     expect(config.routes.find((item) => item.route === '/sw.js')?.headers?.['Cache-Control']).toBe('no-cache');
+  });
+
+  it('maps the web manifest extension to its registered MIME type', async () => {
+    const config = await deploymentConfig();
+    expect(config.mimeTypes['.webmanifest']).toBe('application/manifest+json');
   });
 
   it('contains local classroom data with browser security headers', async () => {

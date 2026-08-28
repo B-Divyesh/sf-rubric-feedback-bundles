@@ -44,7 +44,7 @@ h3{font-family:var(--editorial);font-size:clamp(1.35rem,2.5vw,1.75rem);font-weig
 
 .app{min-height:100vh;display:flex;flex-direction:column}
 .app-header{height:72px;padding:0 max(20px,env(safe-area-inset-left));padding-right:max(20px,env(safe-area-inset-right));display:flex;align-items:center;border-bottom:1px solid rgba(34,91,106,.25);background:rgba(246,241,231,.96);position:sticky;top:0;z-index:50;backdrop-filter:blur(10px)}
-.brand{display:flex;align-items:center;gap:11px;text-decoration:none;color:var(--ink);min-width:max-content}
+.brand{display:flex;align-items:center;gap:11px;text-decoration:none;color:var(--ink);min-width:max-content;min-height:44px}
 .brand h1{font:720 1rem/1.1 var(--ui);letter-spacing:-.015em;margin:0;max-width:10rem}
 .mark{width:40px;height:40px;flex:0 0 auto;background:var(--ink)}
 .mark--small{width:36px;height:36px}
@@ -52,7 +52,7 @@ h3{font-family:var(--editorial);font-size:clamp(1.35rem,2.5vw,1.75rem);font-weig
 .mark__rule{stroke:var(--rule);stroke-width:2;fill:none}
 .mark__pencil{fill:var(--coral)}
 .primary-nav{display:flex;align-items:stretch;height:100%;gap:8px;margin-left:clamp(24px,5vw,80px)}
-.primary-nav a{display:flex;align-items:center;position:relative;padding:0 12px;color:var(--muted);font-weight:650;text-decoration:none}
+.primary-nav a{display:flex;align-items:center;position:relative;min-height:44px;padding:0 12px;color:var(--muted);font-weight:650;text-decoration:none}
 .primary-nav a:hover{color:var(--ink)}
 .primary-nav a.is-active{color:var(--ink)}
 .primary-nav a.is-active::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:3px;background:var(--coral)}
@@ -124,7 +124,7 @@ textarea{resize:vertical;line-height:1.5}
 .progress span{height:100%;display:block;background:var(--leaf);transition:width .24s ease-out}
 .student-queue{display:flex;align-items:stretch;justify-content:space-between;gap:16px;border-bottom:1px solid var(--rule);min-height:64px}
 .student-queue__list{display:flex;align-items:stretch;gap:4px;overflow-x:auto;scrollbar-width:thin;padding-top:7px;min-width:0;flex:1}
-.student-tab{display:flex;align-items:center;gap:9px;min-height:52px;white-space:nowrap;background:transparent;padding:8px 13px;border-bottom:3px solid transparent;font-weight:650;color:var(--muted);cursor:pointer}
+.student-tab{position:relative;display:flex;align-items:center;gap:9px;min-height:52px;white-space:nowrap;background:transparent;padding:8px 13px;border-bottom:3px solid transparent;font-weight:650;color:var(--muted);cursor:pointer}
 .student-tab:hover{color:var(--ink)}
 .student-tab.is-current{color:var(--ink);border-bottom-color:var(--coral);background:rgba(255,253,247,.6)}
 .student-state{width:11px;height:11px;border:2px solid var(--blue);transform:rotate(45deg)}
@@ -227,6 +227,7 @@ textarea{resize:vertical;line-height:1.5}
 .license-status{color:var(--leaf);font-weight:750;display:flex;align-items:center;gap:7px}
 .license-notice{background:#f3dfb9;color:#573b0b;padding:10px;border-left:4px solid var(--ochre)}
 .merchant-note,.legal-line{font-size:.78rem;color:var(--muted);line-height:1.45}
+.legal-line a{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px}
 .restore-form{border-top:1px solid var(--rule);padding-top:20px;margin-top:24px}
 .restore-form>div{display:flex;gap:8px;margin-top:7px}
 .restore-form input{min-width:0}
@@ -239,7 +240,7 @@ kbd{border:1px solid #83999e;background:var(--paper);padding:2px 6px;box-shadow:
 
 .site-footer{margin-top:auto;display:grid;grid-template-columns:1fr auto;gap:8px 24px;padding:24px max(20px,calc((100vw - 1344px)/2));border-top:1px solid var(--rule);font-size:.78rem;color:var(--muted)}
 .site-footer p{margin:0}
-.site-footer nav{display:flex;gap:18px}.site-footer a{color:var(--muted)}
+.site-footer nav{display:flex;gap:18px}.site-footer a{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;color:var(--muted)}
 .generated-disclosure{grid-column:1/-1;font-size:.7rem}
 .toast{position:fixed;z-index:100;left:50%;bottom:max(24px,env(safe-area-inset-bottom));transform:translate(-50%,20px);background:var(--ink);color:var(--sheet);padding:12px 18px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;max-width:min(520px,calc(100vw - 32px));text-align:center;font-weight:650}
 .toast.is-visible{opacity:1;transform:translate(-50%,0)}
@@ -266,8 +267,8 @@ kbd{border:1px solid #83999e;background:var(--paper);padding:2px 6px;box-shadow:
 
 @media (max-width:760px){
   .app-header{height:auto;min-height:68px;flex-wrap:wrap;padding-block:8px;gap:4px 12px}.brand h1{font-size:.85rem;max-width:8rem}.mark{width:36px;height:36px}
-  .primary-nav{order:3;height:44px;margin:0;width:100%;overflow-x:auto;border-top:1px solid var(--rule)}.primary-nav a{flex:1;justify-content:center;padding:0 8px;white-space:nowrap;font-size:.82rem}.primary-nav a.is-active::after{left:8px;right:8px}
-  .header-actions{gap:6px}.connection-status{font-size:0}.connection-status i{display:block}.save-state{display:none}.text-button{font-size:.78rem}.settings-link{width:40px;height:40px}
+  .primary-nav{order:3;height:44px;margin:0;width:100%;overflow-x:auto;box-shadow:inset 0 1px var(--rule)}.primary-nav a{flex:1;justify-content:center;padding:0 8px;white-space:nowrap;font-size:.82rem}.primary-nav a.is-active::after{left:8px;right:8px}
+  .header-actions{gap:6px}.connection-status{font-size:0}.connection-status i{display:block}.save-state{display:none}.text-button{font-size:.78rem}.settings-link{width:44px;height:44px}
   .welcome{min-height:auto;padding:40px 20px 64px}.welcome h2{font-size:clamp(2.5rem,12vw,4rem)}.start-form{grid-template-columns:1fr}.welcome__art{order:-1}.art-frame{padding:10px}.art-caption{font-size:.75rem}
   .assignment-bar{align-items:start}.progress-wrap{min-width:110px;flex-direction:column;align-items:flex-end;gap:6px}.progress{width:100%;flex:none}
   .student-queue{position:sticky;top:112px;z-index:30;background:var(--paper);align-items:center}.student-queue>.button{font-size:0;padding:9px;min-width:44px}.student-queue>.button .icon{margin:0}

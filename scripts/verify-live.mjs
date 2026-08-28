@@ -32,6 +32,8 @@ const font = await response('/fonts/inter-latin-wght-normal.woff2', { method: 'H
 assert.equal(font.headers.get('cache-control'), 'public, max-age=31536000, immutable');
 const worker = await response('/sw.js', { method: 'HEAD' });
 assert.match(worker.headers.get('cache-control') ?? '', /no-cache/);
+const manifest = await response('/manifest.webmanifest', { method: 'HEAD' });
+assert.equal(manifest.headers.get('content-type'), 'application/manifest+json');
 
 const checkout = await fetch(billing, { redirect: 'manual' });
 assert.ok([302, 303, 307, 308].includes(checkout.status), `checkout returned ${checkout.status}`);
