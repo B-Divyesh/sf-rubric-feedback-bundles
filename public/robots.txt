@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://rubric-feedback-bundles.sociobot.in/sitemap.xml

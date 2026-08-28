@@ -23,14 +23,22 @@ self.addEventListener('message', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET' || new URL(event.request.url).origin !== self.location.origin) return;
   if (event.request.mode === 'navigate') {
-    event.respondWith(fetch(event.request).then((response) => {
-      const copy = response.clone();
-      caches.open(CACHE).then((cache) => cache.put(event.request, copy));
-      return response;
-    }).catch(async () => (await caches.match(event.request)) || (await caches.match('/index.html')) || (await caches.match('/offline.html'))));
+    event.respondWith((async () => {
+      const pathname = new URL(event.request.url).pathname;
+      const shellPath = pathname === '/' ? '/index.html' : pathname.endsWith('/') ? `${pathname}index.html` : pathname;
+      const cached = await caches.match(shellPath, { ignoreVary: true });
+      if (cached) return cached;
+      try {
+        const response = await fetch(event.request);
+        if (response.ok) (await caches.open(CACHE)).put(event.request, response.clone());
+        return response;
+      } catch {
+        return (await caches.match('/index.html', { ignoreVary: true })) || (await caches.match('/offline.html', { ignoreVary: true }));
+      }
+    })());
     return;
   }
-  event.respondWith(caches.match(event.request).then((cached) => cached || fetch(event.request).then((response) => {
+  event.respondWith(caches.match(new URL(event.request.url).pathname, { ignoreVary: true }).then((cached) => cached || fetch(event.request).then((response) => {
     if (response.ok) caches.open(CACHE).then((cache) => cache.put(event.request, response.clone()));
     return response;
   })));
