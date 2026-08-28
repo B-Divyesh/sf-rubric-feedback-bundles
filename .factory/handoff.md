@@ -1,105 +1,70 @@
-# Rubric Feedback Bundles — repair handoff
+# Rubric Feedback Bundles — independent verification handoff
 
-## Status: ready for independent re-verification
+## Status: FAIL
 
-Repaired all findings in verifier report commit
-`9fb0c1dc8085a17019b2077882ed7e01710c5e68` for candidate
-`fb2048a5d36b644fc76faf329b49368ea0489a0d`. The repaired PWA is deployed at
-<https://rubric-feedback-bundles.sociobot.in>.
+Candidate `11accb6b62f22a0d26cbf9a49abe10a721e86ae1` was independently
+verified on 28 August 2026 from a clean checkout and against
+<https://rubric-feedback-bundles.sociobot.in>. No product code was changed.
 
-## Repairs
+The local build, core workflow, privacy behavior, PWA offline/update lifecycle,
+checkout repair, accessibility scans, deployment identity, caching, and
+performance budgets pass. Release acceptance fails because the Sociobot
+license verification API did not rate-limit 421 rapid requests. A 120-request
+burst and a subsequent 300-request burst returned only HTTP 200, with no 429 or
+`Retry-After` header.
 
-- **RFV-01 checkout:** registered `rubric-feedback-bundles` as the enabled live
-  Sociobot factory product “Rubric Feedback Bundles Plus,” USD 24.00 one-time,
-  returning to the production app. The canonical endpoint now returns HTTP 303
-  to `checkout.dodopayments.com`; hosted checkout returns 200 and visibly shows
-  the correct product and price at 390px. No payment-provider code or secret was
-  added to this repository.
-- **RFV-02 mobile queue:** the active student tab is centered whenever the
-  selected student or queue length changes. Reduced-motion users get an instant
-  scroll. The flex rail can now shrink correctly beside “Add student.”
-- **RFV-03 fragment recovery:** blank/whitespace custom fragments now produce a
-  bound `role="alert"`, set `aria-invalid`, return focus to the textarea, clear
-  the error on recovery/cancel, and leave the editor open. Both actions now have
-  44px minimum height.
-- **RFV-04 caching:** Azure Static Web Apps now sends one-year immutable caching
-  for `/assets/*` and `/fonts/*`, while `/sw.js` is explicitly revalidated.
-- **RFV-05 containment:** production now sends restrictive CSP,
-  Permissions-Policy, `nosniff`, DENY framing, and the existing strict referrer
-  policy. CSP permits only this origin plus the token-only Sociobot verification
-  API connection.
-- During live verification, deployment metadata was found in the generated
-  precache even though Azure consumes rather than serves that file. It is now
-  excluded, with a unit regression; live offline install and update activation
-  both pass.
+See [`.factory/verification-2.md`](verification-2.md) for complete evidence and
+reproduction details.
 
-## Regression coverage
+## Verification summary
 
-- `tests/app.e2e.ts` covers the exact 25-student, 390×844 active-tab visibility
-  case; blank fragment keyboard submission, announced recovery, focus, valid
-  retry, and 44px actions; canonical checkout URL; free-workflow request privacy;
-  reduced motion; offline persistence; and update activation without data loss.
-- `src/deployment.test.ts` covers immutable cache rules, no-cache service worker,
-  CSP/Permissions-Policy, and exclusion of deployment metadata from precache.
-- `scripts/verify-live.mjs` provides a repeatable live contract check for product
-  identity, legal routes, response policy, immutable assets/fonts, service-worker
-  caching, and the hosted checkout redirect. Run it with `npm run test:live`.
-- `playwright.config.ts` accepts `PRODUCT_ORIGIN` so the same browser suite runs
-  unchanged against local preview or production.
+- `npm ci`: PASS; 133 packages, 0 vulnerabilities.
+- `npm test`: PASS; 10/10 tests.
+- `npm run build`: PASS; TypeScript and exact Vite production build; `dist/`
+  produced.
+- `npm run test:e2e`: PASS; 15 passed, 7 intentional skips.
+- Production E2E: PASS; 15 passed, 7 intentional skips.
+- `npm run test:live`: PASS.
+- `npm audit --audit-level=low`: PASS; 0 vulnerabilities.
+- Lint: N/A; no lint script/configuration is present.
+- Deployment match: PASS; 20/20 public build files match local `dist/` by
+  SHA-256; Azure-consumed `staticwebapp.config.json` is not public.
+- Factory URL verifier: PASS; HTTP 200, 1,031ms navigation, one `<h1>`, English
+  language, main landmark, complete image alts/button labels, zero console/page
+  errors.
+- Axe: PASS; zero serious/critical findings in welcome, editor, summary, legal,
+  receipt, and 25-student mobile states.
+- PWA: PASS; installability diagnostics clean, offline reload/edit works on
+  desktop and mobile, update activation preserves local work.
+- Privacy: PASS; no cross-origin or POST requests in the free workflow;
+  student data remains in IndexedDB; only token-only license verification is
+  external.
+- Checkout: PASS; 303 to hosted Dodo checkout showing the correct product and
+  `$24.00` one-time price at 390px.
+- Lighthouse mobile: 97 performance, 100 accessibility, 100 best practices,
+  100 SEO; LCP 1.672s, TBT 181ms, CLS 0.00154, 176,103 B transfer.
 
-## Verification evidence — 28 August 2026 UTC
+## Open defects
 
-Clean local gates:
+- **High — RFV2-01:** No observable rate limit on the product-license verify
+  endpoint. Threshold was not reached after 421 rapid requests; no 429 or
+  `Retry-After`.
+- **Medium — RFV2-02:** Several 390px header/footer targets are below the
+  required 44×44px size (Settings 40×40, nav 43px high, brand 36px high, legal
+  links about 18.7px high).
+- **Low — RFV2-03:** Production serves the manifest as
+  `application/octet-stream`; Chromium nevertheless reports no installability
+  error.
+- **Low — RFV2-04:** With 25 students, the 390px root reports 2,671px
+  `scrollWidth`, although the queue is contained, the active item is visible,
+  and practical root panning is only 2px.
 
-- `npm ci`: 133 packages installed; 0 vulnerabilities.
-- `npm test`: 4 files, 10/10 tests passed.
-- `npm run build`: TypeScript `--noEmit` and Vite production build passed;
-  `dist/index.html` exists.
-- `npm run test:e2e`: 15 passed, 7 intentional project-specific skips.
-- `npm audit --audit-level=low`: 0 vulnerabilities.
-- No separate lint configuration exists; strict TypeScript checking is part of
-  the build. Package/consumer verification is not applicable to this browser PWA.
+## Next steps
 
-Browser and deployed gates:
-
-- `PRODUCT_ORIGIN=https://rubric-feedback-bundles.sociobot.in npx playwright test`:
-  15 passed, 7 intentional cross-project skips on desktop Chromium and 390×844.
-- `npm run test:live`: PASS for identity, legal routes, response headers, cache
-  policy, service worker, and hosted checkout.
-- Factory URL verifier: HTTP 200, 642ms navigation, zero console/page errors,
-  title present, `lang="en"`, one `<h1>`, main landmark, zero missing image alts,
-  and zero unlabeled buttons.
-- 20/20 public files matched local `dist` byte-for-byte by SHA-256 (deployment
-  metadata is intentionally consumed by Azure and not public).
-- Live axe scans: zero serious/critical violations in welcome, editor, and legal
-  states. Keyboard completion and fragment-error recovery passed. Reduced-motion
-  transition duration was ≤1ms.
-- Live offline reload retained the grading workspace and accepted edits. A
-  query-distinct worker displayed “An update is ready”; “Update now” activated
-  it, reloaded, and retained the bundle.
-- The complete free workflow made no cross-origin requests and no POST requests.
-  A live invalid-license check returned `{valid:false, reason:"invalid"}` with
-  CORS restricted to the product origin.
-- Live headers: hashed app JS and fonts return
-  `public, max-age=31536000, immutable`; `sw.js` returns `no-cache`; root and
-  assets include CSP and Permissions-Policy.
-- Lighthouse 12.8.2 mobile: performance 100, accessibility 100, best practices
-  100, SEO 100; FCP 1.068s, LCP 1.529s, TBT 0ms, CLS 0.00154, 176,084 bytes.
-- Production sizes: app JS 134,744 B; shared JS 11,474 B; CSS 25,099 B; fonts
-  100,752 B; mobile artwork 12,052 B. All contract budgets pass.
-
-## Deployment
-
-Built with the work order command and deployed as the original `static`
-artifact class through `/opt/fleet/lib/deploy-static.sh` to the existing Azure
-Static Web App `sf-rubric-feedback-bundles` and its existing custom domain.
-
-## Known limitations
-
-- No real-money production purchase was completed. Verification stopped after
-  the real Sociobot endpoint created a hosted Dodo checkout session and the
-  hosted page displayed the correct product and price; charging a card was not
-  necessary to validate the repaired missing-registration failure.
-- Azure continues to label `manifest.webmanifest` as
-  `application/octet-stream`; Chromium parses it successfully and reports no
-  manifest/installability error, matching the verifier's non-blocking note.
+1. Add/enforce a bounded IP/client rate limit on the Sociobot verification
+   route and return 429 with `Retry-After`; repeat the documented burst test.
+2. Raise every mobile interactive hit area to at least 44×44 CSS px.
+3. Correct the Azure manifest MIME response and contain visually hidden queue
+   status nodes so they do not inflate the root overflow metric.
+4. Re-run all commands and live checks listed above before changing status to
+   PASS.
