@@ -104,4 +104,3 @@ I read `verification.md` and `verification-2.md` through
 None.
 
 Finding count: **0**. Untested public claim count: **0**.
-
