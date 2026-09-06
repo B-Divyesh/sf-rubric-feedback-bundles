@@ -1,50 +1,98 @@
-# Rubric Feedback Bundles — verification handoff
+# Rubric Feedback Bundles — repair 3 handoff
 
-## Status: FAIL
+## Status: PASS
 
-Verification 4 on 5 September 2026 reviewed implementation
-`7ead537897ca5a67e4053be5c09873a0df38333e` and documentation revision
-`e45d44a125a8dd34b105cae1efc1f8e509e8a3f7`.
+**Implementation deployed:** `5d8a8e2` (`fix: remove duplicate demo deployment
+route`), following the feature implementation in `d18a6e6`.
 
-The repaired runtime regressions remain fixed. A clean checkout passed
-`npm ci`, 11/11 unit tests, production build, local and live E2E (16 passed,
-8 intentional skips), live contract checks, and audit. The 20 public build
-files match the live deployment byte-for-byte. Manifest MIME, 390px target
-sizes, the 25-student root width, checkout redirect, offline/update paths, and
-license verification throttling are verified.
+**Live URL:** <https://rubric-feedback-bundles.sociobot.in>
 
-This is not release-ready. Independent QA found five open findings and 16
-untested public claim groups:
+## What changed
 
-- No one-click sample-data demo sandbox, persistent demo label, reset control,
-  start-real control, or isolated demo storage.
-- No `.factory/claims.json` or `@claim:` test tags for public promises.
-- The first screen does not plainly name the writing-teacher feedback job,
-  audience, and sample-first action.
-- Unknown routes return the empty application with HTTP 200; there is no
-  designed real HTTP 404 page.
-- Canonical, Open Graph, Twitter-card, and Apple touch metadata are absent.
+- Added a one-click `/demo` sandbox with a realistic Grade 9 flash-fiction
+  bundle, selected/tailored feedback, personal notes, three students, and a
+  populated class summary.
+- Kept demo state in `demo:rubric-feedback-bundles` IndexedDB. The real app
+  uses `rubric-feedback-bundles`; demo never opens, reads, or writes it.
+  Reset discards demo records and reseeds the sample. Start for real discards
+  demo records and opens the real workspace.
+- Rewrote the first screen in plain language. At 390px, before scrolling it
+  says the job (give personal feedback on short writing), audience (writing
+  teachers with many short submissions), and first action (Try it with sample
+  data).
+- Added `.factory/claims.json` and 16 isolated browser claim checks. They
+  cover the feedback workflow, exports, storage isolation, no-account/no-AI
+  privacy, anonymized summary, backup/import, PWA/offline, Plus price and
+  unlock, free boundary, billing, tracking, and license-token handling.
+- Added a designed static `404.html` and Static Web Apps 404 override. Unknown
+  routes now return HTTP 404 with a useful return path; `/demo` alone rewrites
+  to the app shell.
+- Added canonical, Open Graph, Twitter, Apple touch-icon, and route metadata;
+  added a 1200×630 social image derived from the product’s existing original
+  illustration. Its provenance is recorded in `.factory/design.md`.
+- Updated README, demo guide, copy audit, catalog description, sitemap, live
+  contract checks, and regression tests.
 
-No product code was changed by the verifier. See
-`.factory/verification-4.md` for exact evidence, the current disposition of
-every earlier finding, and rerun commands. Repair the five findings and add the
-claim tests before requesting another release decision.
+## Verification
 
-## Reproduce
+Run from a clean checkout:
 
 ```sh
 npm ci
 npm test
 npm run build
 npm run test:e2e
-PRODUCT_ORIGIN=https://rubric-feedback-bundles.sociobot.in npm run test:e2e
+npm run test:claims
 npm run test:live
 npm audit --audit-level=low
 ```
 
-For the URL smoke check, run:
+Results for the deployed implementation:
 
-```sh
-mkdir -p /work/.evidence/verify-url-v4
-/opt/fleet/lib/verify-url.sh https://rubric-feedback-bundles.sociobot.in /work/.evidence/verify-url-v4
-```
+- `npm test`: 12/12 passed.
+- `npm run build`: passed; `dist/index.html` exists. Initial app JS is 138.76
+  KB (45.76 KB gzip); CSS is 26.38 KB (6.61 KB gzip).
+- `npm run test:claims`: 16/16 passed. Every public claim in
+  `.factory/claims.json` has one tagged browser test and command.
+- `npm run test:e2e`: 34 passed, 24 intentional project/device skips locally;
+  the same result passed against the live HTTPS origin. It covers desktop,
+  390px, keyboard/focus, invalid/recovery paths, demo reset/isolation,
+  offline reload/edit, service-worker update, PWA manifest, exports, legal
+  pages, touch targets, and reduced motion.
+- `npm run test:live`: passed against production, including demo route,
+  metadata, security/cache policy, hosted checkout redirect, and deliberate
+  HTTP 404 page.
+- `/opt/fleet/lib/verify-url.sh` on the live root: HTTP 200 in 603 ms, one h1,
+  `lang=en`, main landmark, no missing image alt text, no unlabeled buttons,
+  and no console errors.
+- Playwright axe checks in the browser suite found zero serious/critical issues
+  on welcome, editor, and legal states at desktop and 390px. The standalone
+  `@axe-core/cli` was invoked, but its Selenium Chrome launcher cannot create
+  a browser in this worker; the Playwright axe integration is the successful
+  accessibility gate here.
+- Live deployment identity: 23/23 public files match local `dist` SHA-256.
+- `npm audit --audit-level=low`: 0 vulnerabilities.
+- Lighthouse 13.4.1 live mobile: Performance 100, Accessibility 100, Best
+  Practices 100, SEO 100; FCP 1.209 s, LCP 1.710 s, TBT 0 ms, CLS 0.0016,
+  transfer 177,985 B.
+
+## Previous findings
+
+| Finding | Disposition |
+| --- | --- |
+| RFV4-01: no sample demo sandbox | Fixed and covered by demo/isolation/reset E2E. |
+| RFV4-02: no claims registry/tests | Fixed with 16 registry entries and observable demo checks. |
+| RFV4-03: first-screen plain words | Fixed; live desktop and phone cold views inspected. |
+| RFV4-04: unknown route returns 200 | Fixed; live contract test receives HTTP 404 and designed page. |
+| RFV4-05: incomplete metadata | Fixed across root, legal pages, and 404 page. |
+| RFV/RFV2/RFV3 prior mobile, manifest, cache, CSP, checkout, queue, and rate-limit findings | Remain fixed; local and live regression suites passed. |
+
+## Notes
+
+- The first deployment attempt rejected duplicate normalized `/demo` and
+  `/demo/` routes. Commit `5d8a8e2` removed the duplicate; the final upload
+  succeeded and the custom HTTPS domain returned 200.
+- No product gaps are known. The app remains local-first and has no backend,
+  tenant state, or product-owned health endpoint to verify.
+- The implementation SHA is recorded above. The separate documentation/report
+  commit is the repository revision that contains this handoff.
