@@ -57,9 +57,27 @@ test('completes and exports specific student feedback', async ({ page }, testInf
   expect(posts).toEqual([]);
 });
 
+test('keeps the sample sandbox separate from real classroom data', async ({ page }) => {
+  await createBundle(page);
+  await page.getByLabel('Student name').fill('Real writer');
+  await expect(page.getByLabel('Student name')).toHaveValue('Real writer');
+
+  await page.goto('/demo');
+  await expect(page.getByText('Demo — sample data, nothing is saved', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Flash fiction: a turn at the station' })).toBeVisible();
+  await page.getByLabel('A note only you could write').fill('A changed demo note.');
+  await page.getByRole('button', { name: 'Reset demo' }).click();
+  await expect(page.getByLabel('A note only you could write')).toHaveValue(/quiet station image/);
+
+  await page.getByRole('button', { name: 'Start for real' }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole('heading', { name: 'Flash fiction' })).toBeVisible();
+  await expect(page.getByLabel('Student name')).toHaveValue('Real writer');
+});
+
 test('has no serious accessibility violations in welcome and editor states', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Rubric Feedback Bundles' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Give personal feedback on short writing' })).toBeVisible();
   let results = await new AxeBuilder({ page }).analyze();
   expect(results.violations.filter((item) => ['serious', 'critical'].includes(item.impact ?? ''))).toEqual([]);
   await createBundle(page);

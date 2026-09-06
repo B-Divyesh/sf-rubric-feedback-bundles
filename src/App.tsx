@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { JSX } from 'preact';
-import { deleteBundle, exportBackup, importBackup, listBundles, saveBundle } from './db';
+import { clearDemoBundles, db, demoDb, deleteBundle, exportBackup, importBackup, listBundles, saveBundle } from './db';
 import { downloadFile, exportStudent, misconceptionSummary, studentFeedbackHtml, summaryCsv } from './exports';
 import { cachedUnlock, captureReturnedLicense, checkoutUrl, storeLicense, storedLicense, verifyLicense, type LicenseState } from './license';
-import { createBundle, createStudent, newId, type Bundle, type Fragment, type Student } from './types';
+import { createBundle, createDemoBundle, createStudent, newId, type Bundle, type Fragment, type Student } from './types';
 
 type View = 'grade' | 'summary' | 'bundles' | 'settings';
 type SaveState = 'saved' | 'saving' | 'error';
 
-const initialLicense: LicenseState = { unlocked: cachedUnlock(), checking: Boolean(storedLicense()), notice: '' };
+function isDemoLocation(): boolean {
+  const url = new URL(location.href);
+  return url.pathname.replace(/\/$/, '') === '/demo' || url.searchParams.get('demo') === '1';
+}
 
 function Mark({ small = false }: { small?: boolean }) {
   return <svg className={small ? 'mark mark--small' : 'mark'} viewBox="0 0 48 48" aria-hidden="true">
@@ -33,7 +36,7 @@ function Icon({ name }: { name: 'plus' | 'arrow' | 'export' | 'check' | 'bundle'
 
 function AppFooter() {
   return <footer className="site-footer">
-    <p>Private by design. Your drafts stay in this browser unless you export them.</p>
+    <p>Writing feedback stored in your browser until you export it.</p>
     <nav aria-label="Legal"><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a></nav>
     <p className="generated-disclosure">Original illustration generated for this product with Azure AI Foundry.</p>
   </footer>;
@@ -51,25 +54,30 @@ function Welcome({ onCreate }: { onCreate: (title: string, className: string) =>
   }
   return <main id="main" className="welcome">
     <div className="welcome__copy">
-      <p className="eyebrow"><span className="shape shape--diamond" /> Feedback in your voice</p>
-      <h2>Reuse the repeated part.<br /><em>Keep the human part.</em></h2>
-      <p className="lede">Build thoughtful writing feedback from your own rubric fragments, tailor each one, and always leave a note only you could write.</p>
+      <p className="eyebrow"><span className="shape shape--diamond" /> Writing teacher feedback</p>
+      <h1 className="route-heading" tabIndex={-1}>Give personal feedback on short writing</h1>
+      <p className="lede">For writing teachers responding to many short submissions, reuse your rubric and add a personal note.</p>
+      <div className="sample-action">
+        <a className="button button--primary" href="/demo">Try it with sample data <Icon name="arrow" /></a>
+        <p>See a filled feedback bundle. Nothing is saved to your real data.</p>
+      </div>
       <form className="start-form" onSubmit={submit} noValidate>
+        <p className="form-intro">Or start a real feedback bundle</p>
         <div className="field">
           <label htmlFor="assignment-title">Assignment name <span aria-hidden="true">*</span></label>
-          <input id="assignment-title" value={title} onInput={(e) => setTitle(e.currentTarget.value)} aria-invalid={invalid} aria-describedby={invalid ? 'title-error' : undefined} autoFocus />
+          <input id="assignment-title" value={title} onInput={(e) => setTitle(e.currentTarget.value)} aria-invalid={invalid} aria-describedby={invalid ? 'title-error' : undefined} />
           {invalid && <p id="title-error" className="field-error" role="alert">Name the assignment to start a feedback bundle.</p>}
         </div>
         <div className="field">
           <label htmlFor="class-name">Class or section <span className="optional">Optional</span></label>
           <input id="class-name" value={className} onInput={(e) => setClassName(e.currentTarget.value)} />
         </div>
-        <button className="button button--primary start-button" type="submit">Create feedback bundle <Icon name="arrow" /></button>
+        <button className="button button--secondary start-button" type="submit">Create feedback bundle <Icon name="arrow" /></button>
       </form>
-      <ul className="trust-list" aria-label="Product promises">
-        <li><Icon name="check" /> Works offline</li>
-        <li><Icon name="check" /> No AI reads student work</li>
-        <li><Icon name="check" /> Export a page students can keep</li>
+      <ul className="trust-list" aria-label="Product facts">
+        <li><Icon name="check" /> Stored in this browser</li>
+        <li><Icon name="check" /> Works offline after the first visit</li>
+        <li><Icon name="check" /> Free core; Plus is $24 once</li>
       </ul>
     </div>
     <figure className="welcome__art">
@@ -78,10 +86,20 @@ function Welcome({ onCreate }: { onCreate: (title: string, className: string) =>
           <source media="(max-width: 700px)" srcSet="/assets/feedback-geometry-768.webp" />
           <img src="/assets/feedback-geometry-1280.webp" width="1536" height="1024" alt="Paper rubric pieces arranged around a single lined feedback sheet" fetchPriority="high" decoding="async" />
         </picture>
-        <div className="art-caption"><span>01</span> Fragments become one considered response.</div>
+        <div className="art-caption"><span>01</span> Rubric fragments and a personal note make one student feedback page.</div>
       </div>
     </figure>
   </main>;
+}
+
+function DemoBanner({ onReset, onStartReal }: { onReset: () => void; onStartReal: () => void }) {
+  return <aside className="demo-banner" aria-label="Demo status" role="status">
+    <strong>Demo — sample data, nothing is saved</strong>
+    <div>
+      <button className="button button--quiet button--small" type="button" onClick={onReset}>Reset demo</button>
+      <button className="button button--primary button--small" type="button" onClick={onStartReal}>Start for real</button>
+    </div>
+  </aside>;
 }
 
 interface WorkspaceProps {
@@ -243,7 +261,7 @@ function Workspace({ bundle, onChange, onMessage }: WorkspaceProps) {
     <section className="assignment-bar" aria-labelledby="assignment-heading">
       <div>
         <p className="eyebrow"><span className="shape shape--square" /> Active bundle</p>
-        <h2 id="assignment-heading">{bundle.title}</h2>
+        <h1 id="assignment-heading" className="route-heading" tabIndex={-1}>{bundle.title}</h1>
         <p>{bundle.className || 'No class label'} · {completed} of {bundle.students.length} finished</p>
       </div>
       <div className="progress-wrap">
@@ -350,7 +368,7 @@ function Summary({ bundle, unlocked, onMessage }: { bundle: Bundle; unlocked: bo
     onMessage('Downloaded the anonymized CSV summary.');
   }
   return <main id="main" className="page-shell summary-page">
-    <div className="page-heading"><p className="eyebrow"><span className="shape shape--diamond" /> Class patterns</p><h2>Anonymized feedback summary</h2><p>See what the class may need next without exposing student names or submissions.</p></div>
+    <div className="page-heading"><p className="eyebrow"><span className="shape shape--diamond" /> Class patterns</p><h1 className="route-heading" tabIndex={-1}>Anonymized feedback summary</h1><p>See what the class may need next without exposing student names or submissions.</p></div>
     <div className="summary-stats" aria-label="Bundle statistics">
       <div><strong>{bundle.students.length}</strong><span>Students</span></div>
       <div><strong>{completed}</strong><span>Finished</span></div>
@@ -372,7 +390,7 @@ function BundleLibrary({ bundles, currentId, unlocked, onOpen, onCreate, onDelet
   const [className, setClassName] = useState('');
   const canCreate = unlocked || bundles.length === 0;
   return <main id="main" className="page-shell bundles-page">
-    <div className="page-heading"><p className="eyebrow"><span className="shape shape--square" /> Your work</p><h2>Feedback bundles</h2><p>Each bundle keeps its rubric fragments, student queue, and feedback history together.</p></div>
+    <div className="page-heading"><p className="eyebrow"><span className="shape shape--square" /> Your work</p><h1 className="route-heading" tabIndex={-1}>Feedback bundles</h1><p>Each bundle keeps its rubric fragments, student queue, and feedback history together.</p></div>
     <section className="bundle-grid" aria-label="Saved bundles">
       {bundles.map((bundle) => <article className={`bundle-card ${bundle.id === currentId ? 'is-current' : ''}`} key={bundle.id}>
         <div className="bundle-card__mark"><Mark small /></div>
@@ -391,16 +409,16 @@ function BundleLibrary({ bundles, currentId, unlocked, onOpen, onCreate, onDelet
   </main>;
 }
 
-function Settings({ license, onLicense, onImport, onExport, onMessage }: { license: LicenseState; onLicense: () => void; onImport: (file: File) => void; onExport: () => void; onMessage: (message: string) => void }) {
+function Settings({ license, onLicense, onImport, onExport, onMessage }: { license: LicenseState; onLicense: (token: string) => void; onImport: (file: File) => void; onExport: () => void; onMessage: (message: string) => void }) {
   const [token, setToken] = useState('');
   return <main id="main" className="page-shell settings-page">
-    <div className="page-heading"><p className="eyebrow"><span className="shape shape--coral" /> Ownership & backup</p><h2>Settings</h2><p>Your classroom data lives in IndexedDB on this device. Export a backup whenever you want a portable copy.</p></div>
+    <div className="page-heading"><p className="eyebrow"><span className="shape shape--coral" /> Ownership & backup</p><h1 className="route-heading" tabIndex={-1}>Settings</h1><p>Your classroom data lives in IndexedDB on this device. Export a backup whenever you want a portable copy.</p></div>
     <div className="settings-grid">
       <section className="settings-section" aria-labelledby="backup-heading"><p className="section-kicker">01 / Data</p><h3 id="backup-heading">Keep your own backup</h3><p>The JSON backup includes bundle settings, student names and submissions, so store it as carefully as your gradebook.</p><div className="button-stack"><button className="button button--secondary" onClick={onExport}><Icon name="export" /> Download JSON backup</button><label className="button button--quiet file-button"><input type="file" accept="application/json,.json" onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) onImport(file); event.currentTarget.value = ''; }} /> Import a backup</label></div></section>
       <section className="settings-section plus-section" aria-labelledby="plus-heading"><p className="section-kicker">02 / Plus</p><h3 id="plus-heading">{license.unlocked ? 'Plus is unlocked' : 'A private tool, once—not forever'}</h3>
         {license.unlocked ? <><p className="license-status success"><Icon name="check" /> License active on this device</p><p>You can keep unlimited bundles and export class patterns as CSV. Core feedback pages and backups always remain available.</p></> : <><p><strong>$24 one-time.</strong> Unlock unlimited saved bundles and CSV class summaries. No subscription, per-student fee, or tracking.</p><a className="button button--primary" href={checkoutUrl()}>Buy Plus securely</a><p className="merchant-note">Checkout and refunds are handled by Sociobot/Dodo, the merchant of record. A refunded license is revoked automatically.</p></>}
         {license.notice && <p className="license-notice" role="status">{license.notice}</p>}
-        <div className="restore-form"><label htmlFor="license-token">Have a license? Paste it here</label><div><input id="license-token" value={token} onInput={(e) => setToken(e.currentTarget.value)} autoComplete="off" spellcheck={false} /><button className="button button--secondary" disabled={!token.trim() || license.checking} onClick={() => { storeLicense(token); onLicense(); onMessage('Checking your license…'); }}>{license.checking ? 'Checking…' : 'Restore purchase'}</button></div></div>
+        <div className="restore-form"><label htmlFor="license-token">Have a license? Paste it here</label><div><input id="license-token" value={token} onInput={(e) => setToken(e.currentTarget.value)} autoComplete="off" spellcheck={false} /><button className="button button--secondary" disabled={!token.trim() || license.checking} onClick={() => { onLicense(token); onMessage('Checking your license…'); }}>{license.checking ? 'Checking…' : 'Restore purchase'}</button></div></div>
         <p className="legal-line">By purchasing, you agree to the <a href="/terms/">terms</a>. Read how license checks work in our <a href="/privacy/">privacy policy</a>.</p>
       </section>
       <section className="settings-section" aria-labelledby="shortcuts-heading"><p className="section-kicker">03 / Keyboard</p><h3 id="shortcuts-heading">Move without breaking focus</h3><dl className="shortcut-list"><div><dt><kbd>Alt</kbd> + <kbd>←</kbd>/<kbd>→</kbd></dt><dd>Previous or next student</dd></div><div><dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Enter</kbd></dt><dd>Finish current feedback</dd></div></dl></section>
@@ -409,6 +427,9 @@ function Settings({ license, onLicense, onImport, onExport, onMessage }: { licen
 }
 
 export function App() {
+  const [demo] = useState(isDemoLocation);
+  const storage = demo ? demoDb : db;
+  const licenseStorage = demo ? sessionStorage : localStorage;
   const [bundles, setBundles] = useState<Bundle[]>([]);
   const [currentId, setCurrentId] = useState('');
   const [view, setView] = useState<View>('grade');
@@ -418,9 +439,12 @@ export function App() {
   const [message, setMessage] = useState('');
   const [online, setOnline] = useState(navigator.onLine);
   const [updateReady, setUpdateReady] = useState<ServiceWorker | null>(null);
-  const [license, setLicense] = useState<LicenseState>(initialLicense);
+  const [license, setLicense] = useState<LicenseState>(() => ({
+    unlocked: cachedUnlock(licenseStorage), checking: Boolean(storedLicense(licenseStorage)), notice: ''
+  }));
   const [installPrompt, setInstallPrompt] = useState<Event | null>(null);
   const messageTimer = useRef<number | undefined>();
+  const hasMountedRoute = useRef(false);
   const current = bundles.find((item) => item.id === currentId) ?? bundles[0];
 
   function announce(text: string) {
@@ -431,19 +455,28 @@ export function App() {
 
   useEffect(() => {
     let active = true;
-    listBundles().then((saved) => {
-      if (!active) return;
-      setBundles(saved);
-      setCurrentId(saved[0]?.id ?? '');
-      setLoading(false);
-    }).catch(() => {
-      setLoadError('Local storage could not open. Check private-browsing or storage settings, then reload.');
-      setLoading(false);
-    });
-    captureReturnedLicense();
-    setLicense((state) => ({ ...state, checking: Boolean(storedLicense()) }));
-    verifyLicense().then((result) => active && setLicense(result));
-    const onOnline = () => { setOnline(true); verifyLicense().then(setLicense); };
+    async function load() {
+      try {
+        let saved = await listBundles(storage);
+        if (demo && !saved.length) {
+          const sample = createDemoBundle();
+          await saveBundle(sample, storage);
+          saved = [sample];
+        }
+        if (!active) return;
+        setBundles(saved);
+        setCurrentId(saved[0]?.id ?? '');
+        setLoading(false);
+      } catch {
+        setLoadError('Local storage could not open. Check private-browsing or storage settings, then reload.');
+        setLoading(false);
+      }
+    }
+    void load();
+    captureReturnedLicense(licenseStorage);
+    setLicense((state) => ({ ...state, checking: Boolean(storedLicense(licenseStorage)) }));
+    verifyLicense(false, licenseStorage).then((result) => active && setLicense(result));
+    const onOnline = () => { setOnline(true); verifyLicense(false, licenseStorage).then(setLicense); };
     const onOffline = () => setOnline(false);
     const onInstall = (event: Event) => { event.preventDefault(); setInstallPrompt(event); };
     const onUpdate = (event: Event) => setUpdateReady((event as CustomEvent<ServiceWorker>).detail);
@@ -452,7 +485,7 @@ export function App() {
     window.addEventListener('beforeinstallprompt', onInstall);
     window.addEventListener('feedback-app-update', onUpdate);
     return () => { active = false; window.removeEventListener('online', onOnline); window.removeEventListener('offline', onOffline); window.removeEventListener('beforeinstallprompt', onInstall); window.removeEventListener('feedback-app-update', onUpdate); };
-  }, []);
+  }, [demo, licenseStorage, storage]);
 
   useEffect(() => {
     const hashView = location.hash.slice(1) as View;
@@ -462,11 +495,29 @@ export function App() {
     return () => window.removeEventListener('hashchange', hash);
   }, []);
 
+  useEffect(() => {
+    if (loading) return;
+    const pageTitle = demo ? 'Demo — Rubric Feedback Bundles'
+      : view === 'summary' ? 'Class summary — Rubric Feedback Bundles'
+        : view === 'bundles' ? 'Feedback bundles — Rubric Feedback Bundles'
+          : view === 'settings' ? 'Settings — Rubric Feedback Bundles'
+            : current ? `${current.title} — Rubric Feedback Bundles`
+              : 'Rubric Feedback Bundles — Writing feedback for teachers';
+    document.title = pageTitle;
+  }, [current, demo, loading, view]);
+
+  useEffect(() => {
+    if (loading) return;
+    if (!hasMountedRoute.current) { hasMountedRoute.current = true; return; }
+    const frame = requestAnimationFrame(() => document.querySelector<HTMLElement>('#main .route-heading')?.focus({ preventScroll: true }));
+    return () => cancelAnimationFrame(frame);
+  }, [currentId, loading, view]);
+
   async function persist(next: Bundle) {
     const stamped = { ...next, updatedAt: new Date().toISOString() };
     setBundles((saved) => saved.map((item) => item.id === stamped.id ? stamped : item));
     setSaveState('saving');
-    try { await saveBundle(stamped); setSaveState('saved'); }
+    try { await saveBundle(stamped, storage); setSaveState('saved'); }
     catch { setSaveState('error'); announce('Changes could not be saved. Export a backup and check browser storage.'); }
   }
 
@@ -474,7 +525,7 @@ export function App() {
     if (bundles.length && !license.unlocked) { location.hash = 'settings'; return; }
     const bundle = createBundle(title, className);
     try {
-      await saveBundle(bundle);
+      await saveBundle(bundle, storage);
       setBundles((items) => [bundle, ...items]);
       setCurrentId(bundle.id);
       setView('grade');
@@ -486,7 +537,7 @@ export function App() {
   async function remove(id: string) {
     const item = bundles.find((bundle) => bundle.id === id);
     if (!item || !window.confirm(`Delete “${item.title}” and all its student feedback? This cannot be undone.`)) return;
-    await deleteBundle(id);
+    await deleteBundle(id, storage);
     const remaining = bundles.filter((bundle) => bundle.id !== id);
     setBundles(remaining);
     if (currentId === id) setCurrentId(remaining[0]?.id ?? '');
@@ -494,18 +545,19 @@ export function App() {
   }
 
   async function backup() {
-    try { downloadFile(await exportBackup(), `rubric-feedback-backup-${new Date().toISOString().slice(0, 10)}.json`, 'application/json'); announce('Downloaded your complete local backup.'); }
+    try { downloadFile(await exportBackup(storage), `rubric-feedback-backup-${new Date().toISOString().slice(0, 10)}.json`, 'application/json'); announce('Downloaded your complete local backup.'); }
     catch { announce('The backup could not be created. Try again.'); }
   }
 
   async function restore(file: File) {
-    try { const count = await importBackup(await file.text()); const refreshed = await listBundles(); setBundles(refreshed); setCurrentId(refreshed[0]?.id ?? ''); announce(`Imported ${count} ${count === 1 ? 'bundle' : 'bundles'}.`); }
+    try { const count = await importBackup(await file.text(), storage); const refreshed = await listBundles(storage); setBundles(refreshed); setCurrentId(refreshed[0]?.id ?? ''); announce(`Imported ${count} ${count === 1 ? 'bundle' : 'bundles'}.`); }
     catch (error) { announce(error instanceof Error ? error.message : 'The backup could not be imported.'); }
   }
 
-  async function checkLicense() {
+  async function checkLicense(token: string) {
+    storeLicense(token, licenseStorage);
     setLicense((state) => ({ ...state, checking: true }));
-    setLicense(await verifyLicense(true));
+    setLicense(await verifyLicense(true, licenseStorage));
   }
 
   async function install() {
@@ -517,17 +569,34 @@ export function App() {
 
   const title = useMemo(() => current?.title ?? 'Rubric Feedback Bundles', [current]);
 
-  if (loading) return <><header className="app-header"><a className="brand" href="/"><Mark /><h1>Rubric Feedback Bundles</h1></a></header><main id="main" className="loading-state"><span className="loading-geometry" aria-hidden="true" /><p>Opening your local feedback library…</p></main></>;
-  if (loadError) return <><header className="app-header"><a className="brand" href="/"><Mark /><h1>Rubric Feedback Bundles</h1></a></header><main id="main" className="error-state"><h2>Your local library didn’t open</h2><p>{loadError}</p><button className="button button--primary" onClick={() => location.reload()}>Try again</button></main></>;
+  async function resetDemo() {
+    await clearDemoBundles();
+    const sample = createDemoBundle();
+    await saveBundle(sample, demoDb);
+    setBundles([sample]);
+    setCurrentId(sample.id);
+    setView('grade');
+    location.hash = 'grade';
+    announce('Sample feedback reset.');
+  }
+
+  async function startForReal() {
+    await clearDemoBundles();
+    location.assign('/');
+  }
+
+  if (loading) return <><header className="app-header"><a className="brand" href="/"><Mark /><span>Rubric Feedback Bundles</span></a></header><main id="main" className="loading-state"><span className="loading-geometry" aria-hidden="true" /><h1>Opening your local feedback library</h1></main></>;
+  if (loadError) return <><header className="app-header"><a className="brand" href="/"><Mark /><span>Rubric Feedback Bundles</span></a></header><main id="main" className="error-state"><h1>Your local library didn’t open</h1><p>{loadError}</p><button className="button button--primary" onClick={() => location.reload()}>Try again</button></main></>;
 
   return <div className="app">
     <header className="app-header">
-      <a className="brand" href="#grade" aria-label="Rubric Feedback Bundles home"><Mark /><h1>Rubric Feedback Bundles</h1></a>
-      {bundles.length > 0 && <nav className="primary-nav" aria-label="Primary navigation">
-        <a href="#grade" className={view === 'grade' ? 'is-active' : ''} aria-current={view === 'grade' ? 'page' : undefined}>Grade</a>
-        <a href="#summary" className={view === 'summary' ? 'is-active' : ''} aria-current={view === 'summary' ? 'page' : undefined}>Class summary</a>
-        <a href="#bundles" className={view === 'bundles' ? 'is-active' : ''} aria-current={view === 'bundles' ? 'page' : undefined}>Bundles</a>
-      </nav>}
+      <a className="brand" href={demo ? '/demo#grade' : '/'} aria-label="Rubric Feedback Bundles home"><Mark /><span>Rubric Feedback Bundles</span></a>
+      <nav className="primary-nav" aria-label="Primary navigation">
+        {!demo && <a href="/demo">Demo</a>}
+        {bundles.length > 0 ? <><a href="#grade" className={view === 'grade' ? 'is-active' : ''} aria-current={view === 'grade' ? 'page' : undefined}>Grade</a>
+          <a href="#summary" className={view === 'summary' ? 'is-active' : ''} aria-current={view === 'summary' ? 'page' : undefined}>Class summary</a>
+          <a href="#bundles" className={view === 'bundles' ? 'is-active' : ''} aria-current={view === 'bundles' ? 'page' : undefined}>Bundles</a></> : <a href="/privacy/">Privacy</a>}
+      </nav>
       <div className="header-actions">
         <span className={`connection-status ${online ? '' : 'is-offline'}`} title={online ? 'Online; all student data still stays local' : 'Offline'}><i />{online ? 'Local' : 'Offline'}</span>
         {saveState !== 'saved' && <span className={`save-state save-state--${saveState}`} role="status">{saveState === 'saving' ? 'Saving…' : 'Save failed'}</span>}
@@ -535,6 +604,7 @@ export function App() {
         <a className="settings-link" href="#settings" aria-label="Settings" aria-current={view === 'settings' ? 'page' : undefined}><span aria-hidden="true">⚙</span></a>
       </div>
     </header>
+    {demo && <DemoBanner onReset={() => { void resetDemo(); }} onStartReal={() => { void startForReal(); }} />}
     {!online && <div className="offline-banner" role="status"><strong>Offline.</strong> Keep working—changes are saving on this device. License checks and checkout need a connection.</div>}
     {view === 'settings' ? <Settings license={license} onLicense={checkLicense} onImport={restore} onExport={backup} onMessage={announce} /> : !bundles.length ? <Welcome onCreate={create} /> : view === 'grade' && current ? <Workspace bundle={current} onChange={persist} onMessage={announce} /> : view === 'summary' && current ? <Summary bundle={current} unlocked={license.unlocked} onMessage={announce} /> : <BundleLibrary bundles={bundles} currentId={current?.id ?? ''} unlocked={license.unlocked} onOpen={(id) => { setCurrentId(id); location.hash = 'grade'; }} onCreate={create} onDelete={remove} onMessage={announce} />}
     <AppFooter />

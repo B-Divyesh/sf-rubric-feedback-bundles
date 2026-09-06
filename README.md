@@ -1,25 +1,25 @@
 # Rubric Feedback Bundles
 
-Rubric Feedback Bundles is a private, offline-capable workspace for writing
-teachers who need to respond to many short submissions without reducing their
-feedback to boilerplate. Teachers select fragments from an editable rubric,
-tailor them for the current piece, add a required personal note, and export an
-accessible feedback page that a student can keep.
+Rubric Feedback Bundles helps writing teachers give personal feedback on many
+short submissions. Select reusable rubric fragments, tailor them for one
+student, add a personal note, and download a feedback page.
 
 Live: <https://rubric-feedback-bundles.sociobot.in>
 
+Try the isolated sample first: <https://rubric-feedback-bundles.sociobot.in/demo>.
+It opens a filled Grade 9 flash-fiction bundle. The demo uses its own browser
+database, so it never reads or writes real classroom data.
+
 ## What it does
 
-- Keeps assignments, student work, reusable fragments, and progress in local
-  IndexedDB—no account or AI service involved.
-- Provides a focused student queue with editable criterion feedback and a
-  required personal note.
-- Exports standalone, print-friendly student HTML pages and a name-free class
-  pattern summary.
-- Exports and imports a full JSON backup so teachers own their data.
-- Installs as a PWA and reloads the complete grading workspace offline.
+- Stores assignments, student work, rubric fragments, and progress in local
+  IndexedDB. No account or AI service is needed.
+- Exports student HTML feedback pages, an anonymized class pattern summary,
+  and a complete JSON backup that can be imported later.
+- Provides an installable app shell and reloads the workspace offline after the
+  first visit.
 - Offers an optional $24 one-time Plus license for unlimited bundles and CSV
-  class summaries. Checkout and verification use only the Sociobot billing API.
+  class summaries. Checkout and verification use the Sociobot billing service.
 
 The free edition supports one complete bundle and never gates accessible
 student exports, backups, or privacy controls.
@@ -34,6 +34,7 @@ npm run dev
 npm test
 npm run build
 npm run test:e2e
+npm run test:claims
 npm run test:live
 ```
 
@@ -46,15 +47,19 @@ uses the preinstalled Chromium browser in the factory worker.
 headers, immutable asset policy, service-worker revalidation, and the hosted
 Sociobot checkout redirect. Set `PRODUCT_ORIGIN` to verify another deployment.
 
+`.factory/claims.json` lists every public product claim and its isolated
+browser check. `npm run test:claims` runs all of them from the demo entry
+point; each listed command can also run alone after `npm ci`.
+
 Set `VITE_BILLING_BASE` at build time only when testing against a different
 Sociobot environment. Production defaults to `https://api.sociobot.in/api/v1`.
 No product ID or payment-provider SDK is embedded.
 
 ## Privacy and data handling
 
-Student data is stored only in the browser unless a teacher exports it. There
-is no analytics, tracking, remote sync, CDN script, or LLM integration. A Plus
-license token is kept in localStorage and sent only to the Sociobot verification
+Student data is stored only in the browser unless a teacher exports it. The
+free workflow has no analytics, tracking, remote sync, CDN script, or LLM
+integration. A Plus license token is sent only to the Sociobot verification
 endpoint. See `/privacy/` and `/terms/` in the built app.
 
 ## Project notes
@@ -62,6 +67,10 @@ endpoint. See `/privacy/` and `/terms/` in the built app.
 - [.factory/brief.json](.factory/brief.json) records product scope.
 - [.factory/design.md](.factory/design.md) records the visual system and image
   provenance.
+- [.factory/demo.md](.factory/demo.md) describes the sample sandbox and its
+  separate storage namespace.
+- [.factory/claims.json](.factory/claims.json) maps public promises to browser
+  checks.
 - [.factory/handoff.md](.factory/handoff.md) records verification results and
   operational notes.
 

@@ -5,12 +5,14 @@ import { shouldPrecache } from './precache';
 interface RouteConfig {
   route: string;
   headers?: Record<string, string>;
+  rewrite?: string;
 }
 
 interface StaticWebAppConfig {
   routes: RouteConfig[];
   mimeTypes: Record<string, string>;
   globalHeaders: Record<string, string>;
+  responseOverrides: Record<string, { rewrite: string }>;
 }
 
 async function deploymentConfig(): Promise<StaticWebAppConfig> {
@@ -36,6 +38,12 @@ describe('production response policy', () => {
   it('maps the web manifest extension to its registered MIME type', async () => {
     const config = await deploymentConfig();
     expect(config.mimeTypes['.webmanifest']).toBe('application/manifest+json');
+  });
+
+  it('serves the isolated demo route and a designed HTTP 404 page', async () => {
+    const config = await deploymentConfig();
+    expect(config.routes.find((item) => item.route === '/demo')?.rewrite).toBe('/index.html');
+    expect(config.responseOverrides['404']?.rewrite).toBe('/404.html');
   });
 
   it('contains local classroom data with browser security headers', async () => {

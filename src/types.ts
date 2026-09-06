@@ -114,3 +114,51 @@ export function createBundle(title: string, className: string): Bundle {
     history: [{ id: newId('event'), at: now, label: 'Bundle created' }]
   };
 }
+
+/** A realistic completed bundle used only by the isolated try-it-out sandbox. */
+export function createDemoBundle(): Bundle {
+  const now = '2026-09-06T09:00:00.000Z';
+  const criteria = structuredClone(STARTER_CRITERIA);
+  const avery = createStudent('Avery Chen');
+  avery.id = 'demo-student-avery';
+  avery.submission = 'At the end of the platform, the station clock began to run backward. I watched the minute hand erase the wait.';
+  avery.feedback = {
+    ideas: [{ fragmentId: 'ideas-evidence', text: 'Choose the station clock detail and explain why its backward movement changes the scene.' }],
+    organization: [{ fragmentId: 'org-flow', text: 'The shift from waiting to watching helps the reader follow your change in attention.' }]
+  };
+  avery.personalNote = 'The quiet station image stayed with me. Your restraint makes the strange moment believable.';
+  avery.completed = true;
+  avery.updatedAt = now;
+
+  const miles = createStudent('Miles Rivera');
+  miles.id = 'demo-student-miles';
+  miles.submission = 'I found the old map in my grandmother’s desk and followed the faded river line after school.';
+  miles.feedback = {
+    craft: [{ fragmentId: 'craft-specific', text: 'Replace “after school” with one concrete detail that lets us see the start of the search.' }]
+  };
+  miles.personalNote = 'Your map gives the piece a clear sense of possibility. I want to know what you noticed first.';
+  miles.updatedAt = now;
+
+  const noor = createStudent('Noor Patel');
+  noor.id = 'demo-student-noor';
+  noor.submission = 'When the power returned, every porch on the block lit up at once, and the rain looked silver.';
+  noor.feedback = {
+    conventions: [{ fragmentId: 'conv-control', text: 'Sentence boundaries and punctuation support easy reading.' }]
+  };
+  noor.personalNote = 'The silver rain image gives your ending a satisfying lift.';
+  noor.updatedAt = now;
+
+  return {
+    id: 'demo-bundle-flash-fiction',
+    title: 'Flash fiction: a turn at the station',
+    className: 'Grade 9 writing workshop',
+    criteria,
+    students: [avery, miles, noor],
+    createdAt: now,
+    updatedAt: now,
+    history: [
+      { id: 'demo-event-finished', at: now, label: 'Feedback finished for Avery Chen' },
+      { id: 'demo-event-created', at: now, label: 'Sample bundle created' }
+    ]
+  };
+}

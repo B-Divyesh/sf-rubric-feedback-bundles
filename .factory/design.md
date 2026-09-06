@@ -93,7 +93,8 @@ letters, no watermark, no logos, no gradients, no device mockup, no UI.
 - Date: 2026-08-28.
 - License/provenance: original generated asset commissioned for this product;
   prompt sidecar retained in `assets/src/`.
-- Delivery: responsive WebP variants (≤300KB mobile) with explicit dimensions.
+- Delivery: responsive WebP variants (≤300KB mobile) with explicit dimensions;
+  a 1200×630 JPEG social-preview crop is derived from the same original image.
 - Icons and geometric glyphs are original inline SVG authored for the product.
 
 ## Accessibility and performance intent

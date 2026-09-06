@@ -1,0 +1,114 @@
+[
+  {
+    "id": "feedback-bundle",
+    "claim": "Select reusable rubric feedback, tailor it for a student, and add a personal note.",
+    "where": "Landing page, README",
+    "test": "npm run test:claims -- --grep @claim:feedback-bundle",
+    "sandbox": "Fresh browser context at /demo with the shipped flash-fiction sample"
+  },
+  {
+    "id": "student-page-export",
+    "claim": "Downloads a readable student feedback page.",
+    "where": "Landing page, README",
+    "test": "npm run test:claims -- --grep @claim:student-page-export",
+    "sandbox": "Fresh /demo sample; download Avery Chen's feedback page"
+  },
+  {
+    "id": "local-browser-storage",
+    "claim": "Stores classroom work in this browser and keeps demo data in a separate browser database.",
+    "where": "Landing page, README, Privacy",
+    "test": "npm run test:claims -- --grep @claim:local-browser-storage",
+    "sandbox": "Fresh /demo sample; edit, reload, and inspect the isolated IndexedDB namespace"
+  },
+  {
+    "id": "no-account-required",
+    "claim": "Lets teachers complete feedback without an account.",
+    "where": "README, Privacy",
+    "test": "npm run test:claims -- --grep @claim:no-account-required",
+    "sandbox": "Fresh /demo sample; finish feedback with no cookies or sign-in"
+  },
+  {
+    "id": "no-ai-access",
+    "claim": "Does not send student work to an AI service.",
+    "where": "Landing page, README, Privacy",
+    "test": "npm run test:claims -- --grep @claim:no-ai-access",
+    "sandbox": "Fresh /demo sample; record all requests while entering student writing and exporting"
+  },
+  {
+    "id": "anonymized-summary",
+    "claim": "Shows a class feedback summary without student names or submissions.",
+    "where": "README, Privacy",
+    "test": "npm run test:claims -- --grep @claim:anonymized-summary",
+    "sandbox": "Fresh /demo sample; inspect the class summary"
+  },
+  {
+    "id": "backup-import",
+    "claim": "Exports and imports a complete JSON backup.",
+    "where": "README, Privacy",
+    "test": "npm run test:claims -- --grep @claim:backup-import",
+    "sandbox": "Fresh /demo sample; download and re-import its JSON backup"
+  },
+  {
+    "id": "pwa-install",
+    "claim": "Provides an installable app shell after the first visit.",
+    "where": "README",
+    "test": "npm run test:claims -- --grep @claim:pwa-install",
+    "sandbox": "Fresh /demo sample; verify active service worker and standalone manifest"
+  },
+  {
+    "id": "offline-reload",
+    "claim": "Works offline after the first visit.",
+    "where": "Landing page, README, Privacy",
+    "test": "npm run test:claims -- --grep @claim:offline-reload",
+    "sandbox": "Dedicated fresh browser context at /demo; activate service worker, set offline, then reload"
+  },
+  {
+    "id": "plus-price",
+    "claim": "Plus costs $24 once.",
+    "where": "Landing page, README, Terms, Settings",
+    "test": "npm run test:claims -- --grep @claim:plus-price",
+    "sandbox": "Fresh /demo sample; view price and request the hosted checkout redirect without purchase"
+  },
+  {
+    "id": "plus-unlimited-csv",
+    "claim": "A valid Plus license enables unlimited bundles and CSV class summaries.",
+    "where": "README, Terms, Settings",
+    "test": "npm run test:claims -- --grep @claim:plus-unlimited-csv",
+    "sandbox": "Fresh /demo sample with a recorded valid Sociobot verification response; create a second bundle and download CSV"
+  },
+  {
+    "id": "sociobot-billing",
+    "claim": "Checkout uses the registered Sociobot billing service.",
+    "where": "README, Terms, Settings",
+    "test": "npm run test:claims -- --grep @claim:sociobot-billing",
+    "sandbox": "Fresh /demo sample; inspect the visible checkout destination"
+  },
+  {
+    "id": "free-one-bundle",
+    "claim": "The free edition supports one complete feedback bundle.",
+    "where": "README, Terms, Settings",
+    "test": "npm run test:claims -- --grep @claim:free-one-bundle",
+    "sandbox": "Fresh /demo sample without a license; inspect the bundle limit"
+  },
+  {
+    "id": "core-not-gated",
+    "claim": "Free teachers can export student feedback pages and JSON backups.",
+    "where": "README, Terms",
+    "test": "npm run test:claims -- --grep @claim:core-not-gated",
+    "sandbox": "Fresh /demo sample without a license; download both exports"
+  },
+  {
+    "id": "no-tracking-or-sync",
+    "claim": "The free workflow has no analytics, remote sync, or third-party scripts.",
+    "where": "README, Privacy",
+    "test": "npm run test:claims -- --grep @claim:no-tracking-or-sync",
+    "sandbox": "Fresh /demo sample; record all requests across editing, summary, and settings"
+  },
+  {
+    "id": "license-token-only",
+    "claim": "License verification sends only the license token to Sociobot, and an inactive license stays locked.",
+    "where": "README, Privacy",
+    "test": "npm run test:claims -- --grep @claim:license-token-only",
+    "sandbox": "Fresh /demo sample with a recorded invalid verification response; inspect the request URL and demo-only token storage"
+  }
+]

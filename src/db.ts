@@ -1,31 +1,41 @@
 import Dexie, { type EntityTable } from 'dexie';
 import type { Bundle, Criterion, HistoryEvent, Student } from './types';
 
-class FeedbackDatabase extends Dexie {
+export class FeedbackDatabase extends Dexie {
   bundles!: EntityTable<Bundle, 'id'>;
 
-  constructor() {
-    super('rubric-feedback-bundles');
+  constructor(name: string) {
+    super(name);
     this.version(1).stores({ bundles: 'id, updatedAt, title' });
   }
 }
 
-export const db = new FeedbackDatabase();
+/**
+ * Classroom work and the try-it-out workspace intentionally use different
+ * IndexedDB databases. Demo interactions must never open, read, or write the
+ * real classroom database.
+ */
+export const db = new FeedbackDatabase('rubric-feedback-bundles');
+export const demoDb = new FeedbackDatabase('demo:rubric-feedback-bundles');
 
-export async function listBundles(): Promise<Bundle[]> {
-  return db.bundles.orderBy('updatedAt').reverse().toArray();
+export async function listBundles(database: FeedbackDatabase = db): Promise<Bundle[]> {
+  return database.bundles.orderBy('updatedAt').reverse().toArray();
 }
 
-export async function saveBundle(bundle: Bundle): Promise<void> {
-  await db.bundles.put({ ...bundle, updatedAt: new Date().toISOString() });
+export async function saveBundle(bundle: Bundle, database: FeedbackDatabase = db): Promise<void> {
+  await database.bundles.put({ ...bundle, updatedAt: new Date().toISOString() });
 }
 
-export async function deleteBundle(id: string): Promise<void> {
-  await db.bundles.delete(id);
+export async function deleteBundle(id: string, database: FeedbackDatabase = db): Promise<void> {
+  await database.bundles.delete(id);
 }
 
-export async function exportBackup(): Promise<string> {
-  return JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), bundles: await listBundles() }, null, 2);
+export async function exportBackup(database: FeedbackDatabase = db): Promise<string> {
+  return JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), bundles: await listBundles(database) }, null, 2);
+}
+
+export async function clearDemoBundles(): Promise<void> {
+  await demoDb.bundles.clear();
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -60,7 +70,7 @@ function isBundle(value: unknown): value is Bundle {
     Array.isArray(value.history) && value.history.every(isHistoryEvent);
 }
 
-export async function importBackup(raw: string): Promise<number> {
+export async function importBackup(raw: string, database: FeedbackDatabase = db): Promise<number> {
   const parsed: unknown = JSON.parse(raw);
   if (!parsed || typeof parsed !== 'object' || !Array.isArray((parsed as { bundles?: unknown }).bundles)) {
     throw new Error('This file is not a Rubric Feedback Bundles backup.');
@@ -69,6 +79,6 @@ export async function importBackup(raw: string): Promise<number> {
   if (!bundles.length || !bundles.every(isBundle)) {
     throw new Error('The backup contains incomplete or invalid bundle data. Nothing was imported.');
   }
-  await db.bundles.bulkPut(bundles);
+  await database.bundles.bulkPut(bundles);
   return bundles.length;
 }

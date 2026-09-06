@@ -1,9 +1,9 @@
 {
   "name": "Rubric Feedback Bundles",
   "short_name": "Feedback Bundles",
-  "description": "Private, reusable writing feedback that remains unmistakably yours.",
+  "description": "Give writing students specific feedback with reusable rubric fragments and one personal note.",
   "id": "/",
-  "start_url": "/?source=installed&v=1",
+  "start_url": "/?source=installed&v=2",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f6f1e7",

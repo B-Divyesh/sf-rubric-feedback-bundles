@@ -11,8 +11,12 @@ async function response(path, init) {
 
 const root = await response('/');
 const html = await root.text();
-assert.match(html, /<title>Rubric Feedback Bundles/);
+assert.match(html, /<title>Rubric Feedback Bundles — Writing feedback for teachers<\/title>/);
 assert.match(html, /<html lang="en">/);
+assert.match(html, /<link rel="canonical" href="https:\/\/rubric-feedback-bundles\.sociobot\.in\/"/);
+assert.match(html, /property="og:image" content="https:\/\/rubric-feedback-bundles\.sociobot\.in\/assets\/feedback-bundles-social\.jpg"/);
+assert.match(html, /name="twitter:card" content="summary_large_image"/);
+assert.match(html, /rel="apple-touch-icon" href="\/icons\/apple-touch-icon\.png"/);
 
 const csp = root.headers.get('content-security-policy') ?? '';
 assert.match(csp, /default-src 'self'/);
@@ -20,8 +24,22 @@ assert.match(csp, /connect-src 'self' https:\/\/api\.sociobot\.in/);
 assert.match(csp, /frame-ancestors 'none'/);
 assert.match(root.headers.get('permissions-policy') ?? '', /camera=\(\)/);
 
-await response('/privacy/');
-await response('/terms/');
+for (const path of ['/privacy/', '/terms/']) {
+  const legal = await response(path);
+  const legalHtml = await legal.text();
+  assert.match(legalHtml, /rel="canonical" href="https:\/\/rubric-feedback-bundles\.sociobot\.in\/(privacy|terms)\/"/);
+  assert.match(legalHtml, /property="og:image"/);
+  assert.match(legalHtml, /name="twitter:card" content="summary_large_image"/);
+}
+
+const demo = await response('/demo');
+assert.match(await demo.text(), /id="app"/);
+
+const notFound = await fetch(`${origin}/this-route-does-not-exist`);
+assert.equal(notFound.status, 404, 'unknown route must return HTTP 404');
+const notFoundHtml = await notFound.text();
+assert.match(notFoundHtml, /<title>Page not found — Rubric Feedback Bundles<\/title>/);
+assert.match(notFoundHtml, /<h1>Page not found<\/h1>/);
 
 const assetPath = html.match(/<script[^>]+src="([^"]*\/assets\/app-[^"]+\.js)"/)?.[1];
 assert.ok(assetPath, 'could not find the hashed application asset');
