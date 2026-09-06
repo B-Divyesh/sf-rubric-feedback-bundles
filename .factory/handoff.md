@@ -1,6 +1,25 @@
-# Rubric Feedback Bundles — repair 3 handoff
+# Rubric Feedback Bundles — verification 5 handoff
 
 ## Status: PASS
+
+## Independent verification 5
+
+Implementation independently reviewed: `5d8a8e2`
+(`fix: remove duplicate demo deployment route`). Documentation baseline:
+`7eac7ce` (`docs: record repair 3 verification`). The diff between them changes
+only this handoff, not the product image.
+
+The independent verification report is
+`.factory/verification-5.md`. Result: **PASS — zero findings and zero
+untested public claims.** A clean `npm ci` followed by every documented test,
+all 16 claim commands run individually, fresh live desktop/phone inspection,
+route/link checks, live contract verification, URL/accessibility smoke, audit,
+and Lighthouse all passed. Lighthouse 13.4.1 live scored 100 Performance, 100
+Accessibility, 100 Best Practices, and 100 SEO (LCP 1.7 s, 174 KiB transfer).
+
+The expected unknown-route HTTP 404 is live, designed, and useful; it is not a
+product defect. This static local-first PWA has no product backend, so
+tenant/restart/health/rate-limit backend checks are not applicable.
 
 **Implementation deployed:** `5d8a8e2` (`fix: remove duplicate demo deployment
 route`), following the feature implementation in `d18a6e6`.
